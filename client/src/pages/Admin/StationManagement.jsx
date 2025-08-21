@@ -14,11 +14,7 @@ import {
   Plus,
   Save,
   X,
-  CheckCircle,
-  AlertCircle,
-  Download,
-  RefreshCw,
-  Calendar
+  RefreshCw
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -26,7 +22,7 @@ import api from '../../services/api';
 import toast from 'react-hot-toast';
 
 const StationManagement = () => {
-  const { user: currentUser } = useAuth();
+  const { user } = useAuth();
   const [stations, setStations] = useState([]);
   const [filteredStations, setFilteredStations] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -16,9 +16,6 @@ import {
   Plus,
   Save,
   X,
-  CheckCircle,
-  AlertCircle,
-  Download,
   RefreshCw,
   Settings,
   BarChart3
@@ -29,7 +26,7 @@ import api from '../../services/api';
 import toast from 'react-hot-toast';
 
 const BidSessionManagement = () => {
-  const { user: currentUser } = useAuth();
+  const { user } = useAuth();
   const [bidSessions, setBidSessions] = useState([]);
   const [filteredSessions, setFilteredSessions] = useState([]);
   const [loading, setLoading] = useState(true);

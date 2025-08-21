@@ -6,28 +6,28 @@
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^14.5.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.1",
-    "react-scripts": "5.0.1",
-    "socket.io-client": "^4.7.4",
     "axios": "^1.6.2",
+    "clsx": "^2.0.0",
+    "date-fns": "^2.30.0",
+    "lucide-react": "^0.294.0",
+    "react": "^18.2.0",
+    "react-countdown": "^2.3.5",
+    "react-datepicker": "^4.25.0",
+    "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",
     "react-hot-toast": "^2.4.1",
     "react-query": "^3.39.3",
-    "date-fns": "^2.30.0",
-    "lucide-react": "^0.294.0",
-    "clsx": "^2.0.0",
-    "tailwind-merge": "^2.0.0",
-    "recharts": "^2.8.0",
-    "react-countdown": "^2.3.5",
+    "react-router-dom": "^6.20.1",
+    "react-scripts": "5.0.1",
     "react-select": "^5.8.0",
-    "react-datepicker": "^4.25.0",
+    "recharts": "^2.8.0",
+    "socket.io-client": "^4.7.4",
+    "tailwind-merge": "^2.0.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "cross-env CI=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -50,10 +50,11 @@
     ]
   },
   "devDependencies": {
-    "tailwindcss": "^3.3.6",
+    "@tailwindcss/forms": "^0.5.7",
     "autoprefixer": "^10.4.16",
+    "cross-env": "^10.0.0",
     "postcss": "^8.4.32",
-    "@tailwindcss/forms": "^0.5.7"
+    "tailwindcss": "^3.3.6"
   },
   "proxy": "http://localhost:5000"
 }
