@@ -11,27 +11,33 @@
     "install-all": "npm install && cd client && npm install",
     "start": "node server/index.js",
     "setup": "node setup.js",
-    "vercel-build": "cd client && npm install && npm run build"
+    "vercel-build": "cd client && npm install && cross-env CI=false npm run build"
   },
-  "keywords": ["fire-department", "shift-bid", "real-time", "bidding"],
+  "keywords": [
+    "fire-department",
+    "shift-bid",
+    "real-time",
+    "bidding"
+  ],
   "author": "FF Shift Team",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.4",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "mongoose": "^8.0.3",
+    "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
-    "helmet": "^7.1.0",
     "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.3",
     "nodemailer": "^6.9.7",
+    "socket.io": "^4.7.4",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "cross-env": "^10.0.0",
+    "nodemon": "^3.0.2"
   }
 }
