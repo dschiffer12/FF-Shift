@@ -10,6 +10,9 @@ import ResetPassword from './pages/Auth/ResetPassword';
 import Dashboard from './pages/Dashboard/Dashboard';
 import BidInterface from './pages/BidInterface/BidInterface';
 import Profile from './pages/Profile/Profile';
+import Stations from './pages/Stations/Stations';
+import BidHistory from './pages/BidHistory/BidHistory';
+import Seniority from './pages/Seniority/Seniority';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import UserManagement from './pages/Admin/UserManagement';
 import StationManagement from './pages/Admin/StationManagement';
@@ -95,6 +98,9 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="bid/:sessionId" element={<BidInterface />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="stations" element={<Stations />} />
+            <Route path="bid-history" element={<BidHistory />} />
+            <Route path="seniority" element={<Seniority />} />
             
             {/* Admin Routes */}
             <Route path="admin" element={

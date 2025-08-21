@@ -234,8 +234,7 @@ stationSchema.methods.getSummary = function() {
   };
 };
 
-// Indexes for performance
-stationSchema.index({ number: 1 });
+// Indexes for performance (number is already indexed due to unique: true)
 stationSchema.index({ isActive: 1 });
 stationSchema.index({ 'currentAssignments.A.user': 1 });
 stationSchema.index({ 'currentAssignments.B.user': 1 });

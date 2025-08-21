@@ -1,19 +1,19 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { 
   User, 
   Building2, 
   Clock, 
   Award, 
   Calendar,
-  AlertCircle,
-  CheckCircle,
-  XCircle
+  CheckCircle
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const stats = [
     {
@@ -147,19 +147,35 @@ const Dashboard = () => {
         </div>
         <div className="card-body">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button variant="secondary" className="h-20 flex-col">
+            <Button 
+              variant="secondary" 
+              className="h-20 flex-col"
+              onClick={() => navigate('/profile')}
+            >
               <User className="w-6 h-6 mb-2" />
               <span>Update Profile</span>
             </Button>
-            <Button variant="secondary" className="h-20 flex-col">
+            <Button 
+              variant="secondary" 
+              className="h-20 flex-col"
+              onClick={() => navigate('/stations')}
+            >
               <Building2 className="w-6 h-6 mb-2" />
               <span>View Stations</span>
             </Button>
-            <Button variant="secondary" className="h-20 flex-col">
+            <Button 
+              variant="secondary" 
+              className="h-20 flex-col"
+              onClick={() => navigate('/bid-history')}
+            >
               <Calendar className="w-6 h-6 mb-2" />
               <span>Bid History</span>
             </Button>
-            <Button variant="secondary" className="h-20 flex-col">
+            <Button 
+              variant="secondary" 
+              className="h-20 flex-col"
+              onClick={() => navigate('/seniority')}
+            >
               <Award className="w-6 h-6 mb-2" />
               <span>Seniority Info</span>
             </Button>

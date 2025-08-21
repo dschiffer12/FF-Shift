@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Authentication</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .info {
+            color: #6c757d;
+            margin: 20px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Authentication Reset</h1>
+        <p class="info">This will clear your stored authentication tokens and help resolve connection issues.</p>
+        
+        <div id="status"></div>
+        
+        <div class="step">
+            <h3>Step 1: Clear Tokens</h3>
+            <p>Click the button below to clear all authentication tokens from your browser.</p>
+            <button onclick="clearTokens()">Clear All Tokens</button>
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Go to Login</h3>
+            <p>After clearing tokens, you'll be redirected to the login page.</p>
+            <button onclick="goToLogin()">Go to Login Page</button>
+        </div>
+        
+        <div class="step">
+            <h3>Step 3: Login with Admin Credentials</h3>
+            <p>Use these credentials to log in:</p>
+            <p><strong>Email:</strong> admin@ffshift.com</p>
+            <p><strong>Password:</strong> admin123</p>
+        </div>
+        
+        <button onclick="window.close()">Close This Window</button>
+    </div>
+
+    <script>
+        function clearTokens() {
+            const status = document.getElementById('status');
+            
+            try {
+                // Clear all localStorage items
+                localStorage.clear();
+                
+                status.innerHTML = `
+                    <div class="success">
+                        ✅ All tokens cleared successfully!<br>
+                        You can now proceed to login.
+                    </div>
+                `;
+                
+            } catch (error) {
+                status.innerHTML = `
+                    <div class="error">
+                        ❌ Error clearing tokens: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function goToLogin() {
+            window.location.href = 'http://localhost:3000/login';
+        }
+        
+        // Show current localStorage items on page load
+        window.onload = function() {
+            const status = document.getElementById('status');
+            const items = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key) {
+                    items.push(key);
+                }
+            }
+            
+            if (items.length > 0) {
+                status.innerHTML = `
+                    <div class="info">
+                        Found ${items.length} items in localStorage:<br>
+                        <small>${items.join(', ')}</small><br><br>
+                        Click "Clear All Tokens" to remove them.
+                    </div>
+                `;
+            } else {
+                status.innerHTML = `
+                    <div class="info">
+                        No items found in localStorage.<br>
+                        You can proceed to login.
+                    </div>
+                `;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -7,7 +7,6 @@ import {
   Building2, 
   Clock, 
   User, 
-  Settings, 
   LogOut, 
   Menu, 
   X,
@@ -43,7 +42,7 @@ const Layout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
@@ -54,10 +53,10 @@ const Layout = () => {
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
+        fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:relative lg:inset-0 flex flex-col
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
               <Shield className="w-5 h-5 text-white" />
@@ -72,7 +71,7 @@ const Layout = () => {
           </button>
         </div>
 
-        <nav className="mt-6 px-3">
+        <nav className="flex-1 mt-6 px-3 overflow-y-auto">
           <div className="space-y-1">
             {navigation.map((item) => {
               const Icon = item.icon;
@@ -101,16 +100,16 @@ const Layout = () => {
         </nav>
 
         {/* User info and logout */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        <div className="flex-shrink-0 p-4 border-t border-gray-200">
           <div className="flex items-center mb-3">
             <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
               <User className="w-4 h-4 text-primary-600" />
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">
+            <div className="ml-3 min-w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900 truncate">
                 {user?.firstName} {user?.lastName}
               </p>
-              <p className="text-xs text-gray-500">{user?.rank}</p>
+              <p className="text-xs text-gray-500 truncate">{user?.rank}</p>
             </div>
           </div>
           <Button
@@ -126,7 +125,7 @@ const Layout = () => {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="flex-1 lg:ml-0">
         {/* Top bar */}
         <div className="sticky top-0 z-10 bg-white shadow-sm border-b border-gray-200">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">

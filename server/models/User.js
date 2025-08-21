@@ -168,9 +168,7 @@ userSchema.virtual('seniorityScore').get(function() {
   return Math.round(score);
 });
 
-// Indexes for performance
-userSchema.index({ email: 1 });
-userSchema.index({ employeeId: 1 });
+// Indexes for performance (email and employeeId are already indexed due to unique: true)
 userSchema.index({ bidPriority: -1 });
 userSchema.index({ currentBidSession: 1, bidPosition: 1 });
 
