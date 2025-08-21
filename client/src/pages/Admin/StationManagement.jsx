@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { 
   Building2, 
@@ -22,7 +21,6 @@ import api from '../../services/api';
 import toast from 'react-hot-toast';
 
 const StationManagement = () => {
-  const { user } = useAuth();
   const [stations, setStations] = useState([]);
   const [filteredStations, setFilteredStations] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -11,7 +11,7 @@
     "install-all": "npm install && cd client && npm install",
     "start": "node server/index.js",
     "setup": "node setup.js",
-    "vercel-build": "cd client && npm install && cross-env CI=false npm run build"
+    "vercel-build": "cd client && npm install --production=false && cross-env CI=false npm run build"
   },
   "keywords": [
     "fire-department",

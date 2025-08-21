@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { 
   Calendar, 
@@ -26,7 +25,6 @@ import api from '../../services/api';
 import toast from 'react-hot-toast';
 
 const BidSessionManagement = () => {
-  const { user } = useAuth();
   const [bidSessions, setBidSessions] = useState([]);
   const [filteredSessions, setFilteredSessions] = useState([]);
   const [loading, setLoading] = useState(true);
