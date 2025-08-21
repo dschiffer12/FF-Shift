@@ -56,8 +56,8 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       const [statsResponse, activityResponse] = await Promise.all([
-        api.get('/admin/stats'),
-        api.get('/admin/recent-activity')
+        api.get('/api/admin/stats'),
+        api.get('/api/admin/recent-activity')
       ]);
       
       setStats(statsResponse.data);

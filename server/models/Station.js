@@ -223,10 +223,27 @@ stationSchema.methods.removeAssignment = function(shift, userId) {
 
 // Method to get station summary
 stationSchema.methods.getSummary = function() {
+  // Format address as a string if it's an object
+  let addressString = '';
+  if (this.address) {
+    if (typeof this.address === 'string') {
+      addressString = this.address;
+    } else if (this.address.street) {
+      const parts = [
+        this.address.street,
+        this.address.city,
+        this.address.state,
+        this.address.zipCode
+      ].filter(Boolean);
+      addressString = parts.join(', ');
+    }
+  }
+  
   return {
-    id: this._id,
+    _id: this._id,
     name: this.name,
     number: this.number,
+    address: addressString,
     capacity: this.shiftCapacity,
     occupancy: this.currentOccupancy,
     available: this.availableSpots,

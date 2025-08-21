@@ -58,7 +58,7 @@ const BidSessionManagement = () => {
   const fetchBidSessions = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/bid-sessions');
+      const response = await api.get('/api/bid-sessions');
       setBidSessions(response.data.sessions || []);
     } catch (error) {
       console.error('Error fetching bid sessions:', error);
@@ -110,7 +110,7 @@ const BidSessionManagement = () => {
 
   const handleCreateSession = async (data) => {
     try {
-      const response = await api.post('/bid-sessions', data);
+      const response = await api.post('/api/bid-sessions', data);
       setBidSessions([...bidSessions, response.data.bidSession]);
       setIsCreating(false);
       reset();
@@ -123,7 +123,7 @@ const BidSessionManagement = () => {
 
   const handleUpdateSession = async (data) => {
     try {
-      const response = await api.put(`/bid-sessions/${selectedSession._id}`, data);
+      const response = await api.put(`/api/bid-sessions/${selectedSession._id}`, data);
       setBidSessions(bidSessions.map(session => 
         session._id === selectedSession._id ? response.data.bidSession : session
       ));
@@ -143,7 +143,7 @@ const BidSessionManagement = () => {
     }
 
     try {
-      await api.delete(`/bid-sessions/${sessionId}`);
+      await api.delete(`/api/bid-sessions/${sessionId}`);
       setBidSessions(bidSessions.filter(session => session._id !== sessionId));
       toast.success('Bid session deleted successfully');
     } catch (error) {

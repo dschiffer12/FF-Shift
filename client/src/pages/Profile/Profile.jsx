@@ -90,7 +90,7 @@ const Profile = () => {
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-      const response = await api.put('/users/profile', data);
+      const response = await api.put('/api/users/profile', data);
       updateUser(response.data.user);
       setIsEditing(false);
       toast.success('Profile updated successfully!');
@@ -105,7 +105,7 @@ const Profile = () => {
   const onPasswordSubmit = async (data) => {
     setPasswordLoading(true);
     try {
-      await api.put('/users/change-password', {
+      await api.put('/api/users/change-password', {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword
       });

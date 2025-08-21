@@ -55,7 +55,7 @@ const StationManagement = () => {
   const fetchStations = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/stations');
+      const response = await api.get('/api/stations');
       setStations(response.data.stations || []);
     } catch (error) {
       console.error('Error fetching stations:', error);
@@ -108,7 +108,20 @@ const StationManagement = () => {
 
   const handleCreateStation = async (data) => {
     try {
-      const response = await api.post('/stations', data);
+      // Transform the data to match API expectations
+      const transformedData = {
+        name: data.name,
+        number: data.number,
+        address: data.address,
+        totalCapacity: data.capacity,
+        shiftCapacity: {
+          A: data.shiftACapacity || 0,
+          B: data.shiftBCapacity || 0,
+          C: data.shiftCCapacity || 0
+        }
+      };
+      
+      const response = await api.post('/api/stations', transformedData);
       setStations([...stations, response.data.station]);
       setIsCreating(false);
       reset();
@@ -121,9 +134,23 @@ const StationManagement = () => {
 
   const handleUpdateStation = async (data) => {
     try {
-      const response = await api.put(`/stations/${selectedStation._id}`, data);
+      // Transform the data to match API expectations
+      const transformedData = {
+        name: data.name,
+        number: data.number,
+        address: data.address,
+        totalCapacity: data.capacity,
+        shiftCapacity: {
+          A: data.shiftACapacity || 0,
+          B: data.shiftBCapacity || 0,
+          C: data.shiftCCapacity || 0
+        },
+        isActive: data.isActive
+      };
+      
+      const response = await api.put(`/api/stations/${selectedStation._id || selectedStation.id}`, transformedData);
       setStations(stations.map(station => 
-        station._id === selectedStation._id ? response.data.station : station
+        (station._id || station.id) === (selectedStation._id || selectedStation.id) ? response.data.station : station
       ));
       setIsEditing(false);
       setSelectedStation(null);
@@ -141,8 +168,8 @@ const StationManagement = () => {
     }
 
     try {
-      await api.delete(`/stations/${stationId}`);
-      setStations(stations.filter(station => station._id !== stationId));
+      await api.delete(`/api/stations/${stationId}`);
+      setStations(stations.filter(station => (station._id || station.id) !== stationId));
       toast.success('Station deleted successfully');
     } catch (error) {
       console.error('Error deleting station:', error);
@@ -155,10 +182,10 @@ const StationManagement = () => {
     setEditValue('name', station.name || '');
     setEditValue('number', station.number || '');
     setEditValue('address', station.address || '');
-    setEditValue('capacity', station.capacity || 0);
-    setEditValue('shiftACapacity', station.shiftACapacity || 0);
-    setEditValue('shiftBCapacity', station.shiftBCapacity || 0);
-    setEditValue('shiftCCapacity', station.shiftCCapacity || 0);
+    setEditValue('capacity', station.capacity ? Object.values(station.capacity).reduce((sum, val) => sum + val, 0) : 0);
+    setEditValue('shiftACapacity', station.capacity?.A || 0);
+    setEditValue('shiftBCapacity', station.capacity?.B || 0);
+    setEditValue('shiftCCapacity', station.capacity?.C || 0);
     setEditValue('isActive', station.isActive !== false);
     setIsEditing(true);
   };
@@ -181,8 +208,10 @@ const StationManagement = () => {
   };
 
   const getOccupancyPercentage = (station) => {
-    if (!station.capacity) return 0;
-    return Math.round((station.currentOccupancy / station.capacity) * 100);
+    if (!station.capacity || !station.occupancy) return 0;
+    const totalCapacity = Object.values(station.capacity).reduce((sum, val) => sum + val, 0);
+    const totalOccupancy = Object.values(station.occupancy).reduce((sum, val) => sum + val, 0);
+    return Math.round((totalOccupancy / totalCapacity) * 100);
   };
 
   if (loading) {
@@ -260,7 +289,7 @@ const StationManagement = () => {
       {/* Stations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStations.map((station) => (
-          <div key={station._id} className="card hover:shadow-lg transition-shadow">
+          <div key={station._id || station.id} className="card hover:shadow-lg transition-shadow">
             <div className="card-header">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -286,7 +315,10 @@ const StationManagement = () => {
                 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Capacity:</span>
-                  <span className="font-medium">{station.currentOccupancy}/{station.capacity}</span>
+                  <span className="font-medium">
+                    {station.occupancy ? Object.values(station.occupancy).reduce((sum, val) => sum + val, 0) : 0}/
+                    {station.capacity ? Object.values(station.capacity).reduce((sum, val) => sum + val, 0) : 0}
+                  </span>
                 </div>
                 
                 <div className="w-full bg-gray-200 rounded-full h-2">
@@ -302,15 +334,15 @@ const StationManagement = () => {
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="text-center">
                     <div className="font-medium text-blue-600">Shift A</div>
-                    <div>{station.shiftACapacity || 0}</div>
+                    <div>{station.capacity?.A || 0}</div>
                   </div>
                   <div className="text-center">
                     <div className="font-medium text-green-600">Shift B</div>
-                    <div>{station.shiftBCapacity || 0}</div>
+                    <div>{station.capacity?.B || 0}</div>
                   </div>
                   <div className="text-center">
                     <div className="font-medium text-purple-600">Shift C</div>
-                    <div>{station.shiftCCapacity || 0}</div>
+                    <div>{station.capacity?.C || 0}</div>
                   </div>
                 </div>
 
@@ -330,7 +362,7 @@ const StationManagement = () => {
                     <Edit3 className="w-4 h-4" />
                   </Button>
                   <Button
-                    onClick={() => handleDeleteStation(station._id)}
+                    onClick={() => handleDeleteStation(station._id || station.id)}
                     variant="ghost"
                     size="sm"
                     className="text-red-600 hover:text-red-800"
@@ -690,7 +722,8 @@ const StationManagement = () => {
                 <div className="flex items-center text-sm">
                   <Users className="w-4 h-4 text-gray-400 mr-2" />
                   <span className="text-gray-600">
-                    {selectedStation.currentOccupancy}/{selectedStation.capacity} assigned
+                    {selectedStation.occupancy ? Object.values(selectedStation.occupancy).reduce((sum, val) => sum + val, 0) : 0}/
+                    {selectedStation.capacity ? Object.values(selectedStation.capacity).reduce((sum, val) => sum + val, 0) : 0} assigned
                   </span>
                 </div>
                 <div className="flex items-center text-sm">
@@ -706,15 +739,15 @@ const StationManagement = () => {
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div className="text-center p-2 bg-blue-50 rounded">
                     <div className="font-medium text-blue-600">Shift A</div>
-                    <div>{selectedStation.shiftACapacity || 0}</div>
+                    <div>{selectedStation.capacity?.A || 0}</div>
                   </div>
                   <div className="text-center p-2 bg-green-50 rounded">
                     <div className="font-medium text-green-600">Shift B</div>
-                    <div>{selectedStation.shiftBCapacity || 0}</div>
+                    <div>{selectedStation.capacity?.B || 0}</div>
                   </div>
                   <div className="text-center p-2 bg-purple-50 rounded">
                     <div className="font-medium text-purple-600">Shift C</div>
-                    <div>{selectedStation.shiftCCapacity || 0}</div>
+                    <div>{selectedStation.capacity?.C || 0}</div>
                   </div>
                 </div>
               </div>
