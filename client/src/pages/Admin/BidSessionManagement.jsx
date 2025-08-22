@@ -9,7 +9,6 @@ import {
   Eye, 
   Play, 
   Pause, 
-  Square, 
   Users, 
   Clock, 
   Plus,
@@ -79,8 +78,11 @@ const BidSessionManagement = () => {
       case 'active':
         filtered = filtered.filter(session => session.status === 'active');
         break;
-      case 'pending':
-        filtered = filtered.filter(session => session.status === 'pending');
+      case 'draft':
+        filtered = filtered.filter(session => session.status === 'draft');
+        break;
+      case 'scheduled':
+        filtered = filtered.filter(session => session.status === 'scheduled');
         break;
       case 'completed':
         filtered = filtered.filter(session => session.status === 'completed');
@@ -105,13 +107,34 @@ const BidSessionManagement = () => {
 
   const handleCreateSession = async (data) => {
     try {
-      const response = await api.post('/api/bid-sessions', data);
+      console.log('Creating session with data:', data);
+      
+      // Add default settings
+      const sessionData = {
+        ...data,
+        year: parseInt(data.year),
+        bidWindowDuration: parseInt(data.bidWindowDuration),
+        autoAssignTimeout: parseInt(data.autoAssignTimeout),
+        settings: {
+          allowMultipleBids: false,
+          requirePositionMatch: true,
+          allowCrossShiftBidding: false,
+          maxBidAttempts: 3
+        }
+      };
+
+      console.log('Session data being sent:', sessionData);
+      
+      const response = await api.post('/api/bid-sessions', sessionData);
+      console.log('Create response:', response.data);
+      
       setBidSessions([...bidSessions, response.data.bidSession]);
       setIsCreating(false);
       reset();
       toast.success('Bid session created successfully');
     } catch (error) {
       console.error('Error creating bid session:', error);
+      console.error('Error response:', error.response?.data);
       toast.error(error.response?.data?.error || 'Failed to create bid session');
     }
   };
@@ -149,7 +172,7 @@ const BidSessionManagement = () => {
 
   const handleStartSession = async (sessionId) => {
     try {
-      await api.post(`/bid-sessions/${sessionId}/start`);
+      await api.post(`/api/bid-sessions/${sessionId}/start`);
       await fetchBidSessions(); // Refresh the list
       toast.success('Bid session started successfully');
     } catch (error) {
@@ -160,7 +183,7 @@ const BidSessionManagement = () => {
 
   const handlePauseSession = async (sessionId) => {
     try {
-      await api.post(`/bid-sessions/${sessionId}/pause`);
+      await api.post(`/api/bid-sessions/${sessionId}/pause`);
       await fetchBidSessions(); // Refresh the list
       toast.success('Bid session paused successfully');
     } catch (error) {
@@ -169,14 +192,14 @@ const BidSessionManagement = () => {
     }
   };
 
-  const handleStopSession = async (sessionId) => {
+  const handleResumeSession = async (sessionId) => {
     try {
-      await api.post(`/bid-sessions/${sessionId}/stop`);
+      await api.post(`/api/bid-sessions/${sessionId}/resume`);
       await fetchBidSessions(); // Refresh the list
-      toast.success('Bid session stopped successfully');
+      toast.success('Bid session resumed successfully');
     } catch (error) {
-      console.error('Error stopping bid session:', error);
-      toast.error(error.response?.data?.error || 'Failed to stop bid session');
+      console.error('Error resuming bid session:', error);
+      toast.error(error.response?.data?.error || 'Failed to resume bid session');
     }
   };
 
@@ -184,10 +207,11 @@ const BidSessionManagement = () => {
     setSelectedSession(session);
     setEditValue('name', session.name || '');
     setEditValue('description', session.description || '');
-    setEditValue('startDate', session.startDate ? new Date(session.startDate).toISOString().split('T')[0] : '');
-    setEditValue('endDate', session.endDate ? new Date(session.endDate).toISOString().split('T')[0] : '');
-    setEditValue('bidTimeLimit', session.bidTimeLimit || 300);
-    setEditValue('autoAssign', session.autoAssign !== false);
+    setEditValue('scheduledStart', session.scheduledStart ? new Date(session.scheduledStart).toISOString().slice(0, 16) : '');
+    setEditValue('scheduledEnd', session.scheduledEnd ? new Date(session.scheduledEnd).toISOString().slice(0, 16) : '');
+    setEditValue('year', session.year || 2024);
+    setEditValue('bidWindowDuration', session.bidWindowDuration || 5);
+    setEditValue('autoAssignTimeout', session.autoAssignTimeout || 2);
     setIsEditing(true);
   };
 
@@ -198,14 +222,16 @@ const BidSessionManagement = () => {
 
   const getStatusColor = (session) => {
     switch (session.status) {
+      case 'draft':
+        return 'bg-gray-100 text-gray-800';
+      case 'scheduled':
+        return 'bg-blue-100 text-blue-800';
       case 'active':
         return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800';
       case 'paused':
         return 'bg-orange-100 text-orange-800';
+      case 'completed':
+        return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -213,14 +239,16 @@ const BidSessionManagement = () => {
 
   const getStatusText = (session) => {
     switch (session.status) {
+      case 'draft':
+        return 'Draft';
+      case 'scheduled':
+        return 'Scheduled';
       case 'active':
         return 'Active';
-      case 'pending':
-        return 'Pending';
-      case 'completed':
-        return 'Completed';
       case 'paused':
         return 'Paused';
+      case 'completed':
+        return 'Completed';
       default:
         return 'Unknown';
     }
@@ -229,12 +257,6 @@ const BidSessionManagement = () => {
   const formatDate = (dateString) => {
     if (!dateString) return 'Not set';
     return new Date(dateString).toLocaleDateString();
-  };
-
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   if (loading) {
@@ -299,10 +321,11 @@ const BidSessionManagement = () => {
                 className="input"
               >
                 <option value="all">All Sessions</option>
+                <option value="draft">Draft</option>
+                <option value="scheduled">Scheduled</option>
                 <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
                 <option value="paused">Paused</option>
+                <option value="completed">Completed</option>
               </select>
             </div>
           </div>
@@ -334,7 +357,7 @@ const BidSessionManagement = () => {
                 <div className="flex items-center text-sm">
                   <Clock className="w-4 h-4 text-gray-400 mr-2" />
                   <span className="text-gray-600">
-                    {formatDate(session.startDate)} - {formatDate(session.endDate)}
+                    {formatDate(session.scheduledStart)} - {formatDate(session.scheduledEnd)}
                   </span>
                 </div>
                 
@@ -344,14 +367,14 @@ const BidSessionManagement = () => {
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Bid Time Limit:</span>
-                  <span className="font-medium">{formatTime(session.bidTimeLimit || 300)}</span>
+                  <span className="text-gray-600">Bid Window Duration:</span>
+                  <span className="font-medium">{session.bidWindowDuration || 5} minutes</span>
                 </div>
 
                 <div className="flex items-center text-sm">
                   <Settings className="w-4 h-4 text-gray-400 mr-2" />
                   <span className="text-gray-600">
-                    Auto-assign: {session.autoAssign ? 'Enabled' : 'Disabled'}
+                    Auto-assign Timeout: {session.autoAssignTimeout || 2} minutes
                   </span>
                 </div>
 
@@ -370,7 +393,7 @@ const BidSessionManagement = () => {
                   >
                     <Edit3 className="w-4 h-4" />
                   </Button>
-                  {session.status === 'pending' && (
+                  {(session.status === 'draft' || session.status === 'scheduled') && (
                     <Button
                       onClick={() => handleStartSession(session._id)}
                       variant="ghost"
@@ -381,28 +404,18 @@ const BidSessionManagement = () => {
                     </Button>
                   )}
                   {session.status === 'active' && (
-                    <>
-                      <Button
-                        onClick={() => handlePauseSession(session._id)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-orange-600 hover:text-orange-800"
-                      >
-                        <Pause className="w-4 h-4" />
-                      </Button>
-                                             <Button
-                         onClick={() => handleStopSession(session._id)}
-                         variant="ghost"
-                         size="sm"
-                         className="text-red-600 hover:text-red-800"
-                       >
-                         <Square className="w-4 h-4" />
-                       </Button>
-                    </>
+                    <Button
+                      onClick={() => handlePauseSession(session._id)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-orange-600 hover:text-orange-800"
+                    >
+                      <Pause className="w-4 h-4" />
+                    </Button>
                   )}
                   {session.status === 'paused' && (
                     <Button
-                      onClick={() => handleStartSession(session._id)}
+                      onClick={() => handleResumeSession(session._id)}
                       variant="ghost"
                       size="sm"
                       className="text-green-600 hover:text-green-800"
@@ -484,60 +497,82 @@ const BidSessionManagement = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    {...register('startDate', { required: 'Start date is required' })}
-                    className="input"
-                  />
-                  {errors.startDate && (
-                    <p className="mt-1 text-sm text-red-600">{errors.startDate.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    {...register('endDate', { required: 'End date is required' })}
-                    className="input"
-                  />
-                  {errors.endDate && (
-                    <p className="mt-1 text-sm text-red-600">{errors.endDate.message}</p>
-                  )}
-                </div>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Bid Time Limit (seconds)
+                  Year
                 </label>
                 <input
                   type="number"
-                  {...register('bidTimeLimit', { required: 'Bid time limit is required', min: 30, max: 3600 })}
+                  {...register('year', { required: 'Year is required', min: 2024 })}
                   className="input"
-                  placeholder="300"
+                  placeholder="2024"
+                  defaultValue="2024"
                 />
-                {errors.bidTimeLimit && (
-                  <p className="mt-1 text-sm text-red-600">{errors.bidTimeLimit.message}</p>
+                {errors.year && (
+                  <p className="mt-1 text-sm text-red-600">{errors.year.message}</p>
                 )}
               </div>
 
-              <div className="flex items-center space-x-4">
-                <label className="flex items-center">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Scheduled Start
+                  </label>
                   <input
-                    type="checkbox"
-                    {...register('autoAssign')}
-                    defaultChecked
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    type="datetime-local"
+                    {...register('scheduledStart', { required: 'Scheduled start is required' })}
+                    className="input"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Auto-assign if no bid</span>
-                </label>
+                  {errors.scheduledStart && (
+                    <p className="mt-1 text-sm text-red-600">{errors.scheduledStart.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Scheduled End
+                  </label>
+                  <input
+                    type="datetime-local"
+                    {...register('scheduledEnd', { required: 'Scheduled end is required' })}
+                    className="input"
+                  />
+                  {errors.scheduledEnd && (
+                    <p className="mt-1 text-sm text-red-600">{errors.scheduledEnd.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bid Window Duration (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    {...register('bidWindowDuration', { required: 'Bid window duration is required', min: 1, max: 60 })}
+                    className="input"
+                    placeholder="5"
+                    defaultValue="5"
+                  />
+                  {errors.bidWindowDuration && (
+                    <p className="mt-1 text-sm text-red-600">{errors.bidWindowDuration.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Auto Assign Timeout (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    {...register('autoAssignTimeout', { required: 'Auto assign timeout is required', min: 1, max: 30 })}
+                    className="input"
+                    placeholder="2"
+                    defaultValue="2"
+                  />
+                  {errors.autoAssignTimeout && (
+                    <p className="mt-1 text-sm text-red-600">{errors.autoAssignTimeout.message}</p>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center justify-end space-x-3 pt-4">
@@ -609,58 +644,79 @@ const BidSessionManagement = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    {...registerEdit('startDate', { required: 'Start date is required' })}
-                    className="input"
-                  />
-                  {editErrors.startDate && (
-                    <p className="mt-1 text-sm text-red-600">{editErrors.startDate.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    {...registerEdit('endDate', { required: 'End date is required' })}
-                    className="input"
-                  />
-                  {editErrors.endDate && (
-                    <p className="mt-1 text-sm text-red-600">{editErrors.endDate.message}</p>
-                  )}
-                </div>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Bid Time Limit (seconds)
+                  Year
                 </label>
                 <input
                   type="number"
-                  {...registerEdit('bidTimeLimit', { required: 'Bid time limit is required', min: 30, max: 3600 })}
+                  {...registerEdit('year', { required: 'Year is required', min: 2024 })}
                   className="input"
+                  placeholder="2024"
                 />
-                {editErrors.bidTimeLimit && (
-                  <p className="mt-1 text-sm text-red-600">{editErrors.bidTimeLimit.message}</p>
+                {editErrors.year && (
+                  <p className="mt-1 text-sm text-red-600">{editErrors.year.message}</p>
                 )}
               </div>
 
-              <div className="flex items-center space-x-4">
-                <label className="flex items-center">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Scheduled Start
+                  </label>
                   <input
-                    type="checkbox"
-                    {...registerEdit('autoAssign')}
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    type="datetime-local"
+                    {...registerEdit('scheduledStart', { required: 'Scheduled start is required' })}
+                    className="input"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Auto-assign if no bid</span>
-                </label>
+                  {editErrors.scheduledStart && (
+                    <p className="mt-1 text-sm text-red-600">{editErrors.scheduledStart.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Scheduled End
+                  </label>
+                  <input
+                    type="datetime-local"
+                    {...registerEdit('scheduledEnd', { required: 'Scheduled end is required' })}
+                    className="input"
+                  />
+                  {editErrors.scheduledEnd && (
+                    <p className="mt-1 text-sm text-red-600">{editErrors.scheduledEnd.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bid Window Duration (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    {...registerEdit('bidWindowDuration', { required: 'Bid window duration is required', min: 1, max: 60 })}
+                    className="input"
+                    placeholder="5"
+                  />
+                  {editErrors.bidWindowDuration && (
+                    <p className="mt-1 text-sm text-red-600">{editErrors.bidWindowDuration.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Auto Assign Timeout (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    {...registerEdit('autoAssignTimeout', { required: 'Auto assign timeout is required', min: 1, max: 30 })}
+                    className="input"
+                    placeholder="2"
+                  />
+                  {editErrors.autoAssignTimeout && (
+                    <p className="mt-1 text-sm text-red-600">{editErrors.autoAssignTimeout.message}</p>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center justify-end space-x-3 pt-4">
@@ -721,7 +777,7 @@ const BidSessionManagement = () => {
                 <div className="flex items-center text-sm">
                   <Clock className="w-4 h-4 text-gray-400 mr-2" />
                   <span className="text-gray-600">
-                    {formatDate(selectedSession.startDate)} - {formatDate(selectedSession.endDate)}
+                    {formatDate(selectedSession.scheduledStart)} - {formatDate(selectedSession.scheduledEnd)}
                   </span>
                 </div>
                 <div className="flex items-center text-sm">
@@ -733,13 +789,13 @@ const BidSessionManagement = () => {
                 <div className="flex items-center text-sm">
                   <Settings className="w-4 h-4 text-gray-400 mr-2" />
                   <span className="text-gray-600">
-                    Bid time limit: {formatTime(selectedSession.bidTimeLimit || 300)}
+                    Bid window duration: {selectedSession.bidWindowDuration || 5} minutes
                   </span>
                 </div>
                 <div className="flex items-center text-sm">
                   <BarChart3 className="w-4 h-4 text-gray-400 mr-2" />
                   <span className="text-gray-600">
-                    Auto-assign: {selectedSession.autoAssign ? 'Enabled' : 'Disabled'}
+                    Auto-assign timeout: {selectedSession.autoAssignTimeout || 2} minutes
                   </span>
                 </div>
               </div>

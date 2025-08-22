@@ -303,8 +303,8 @@ router.post('/:id/start', authenticateAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Bid session not found' });
     }
 
-    if (bidSession.status !== 'scheduled') {
-      return res.status(400).json({ error: 'Session must be scheduled to start' });
+    if (bidSession.status !== 'scheduled' && bidSession.status !== 'draft') {
+      return res.status(400).json({ error: 'Session must be scheduled or draft to start' });
     }
 
     if (bidSession.participants.length === 0) {
