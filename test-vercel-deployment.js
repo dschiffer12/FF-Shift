@@ -7,14 +7,20 @@ async function testDeployment() {
   console.log('Testing Vercel deployment...\n');
 
   try {
+    // Test simple endpoint
+    console.log('1. Testing simple endpoint...');
+    const testResponse = await axios.get(`${VERCEL_URL}/api/test`);
+    console.log('✅ Test endpoint working:', testResponse.data);
+    console.log('');
+
     // Test health endpoint
-    console.log('1. Testing health endpoint...');
+    console.log('2. Testing health endpoint...');
     const healthResponse = await axios.get(`${VERCEL_URL}/api/health`);
     console.log('✅ Health endpoint working:', healthResponse.data);
     console.log('');
 
     // Test login endpoint (should return 400 for missing credentials)
-    console.log('2. Testing login endpoint...');
+    console.log('3. Testing login endpoint...');
     try {
       await axios.post(`${VERCEL_URL}/api/auth/login`, {});
     } catch (error) {
@@ -27,7 +33,7 @@ async function testDeployment() {
     console.log('');
 
     // Test registration endpoint (should return 400 for missing credentials)
-    console.log('3. Testing registration endpoint...');
+    console.log('4. Testing registration endpoint...');
     try {
       await axios.post(`${VERCEL_URL}/api/auth/register`, {});
     } catch (error) {
