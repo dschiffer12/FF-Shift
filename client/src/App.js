@@ -9,6 +9,8 @@ import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
 import Dashboard from './pages/Dashboard/Dashboard';
 import BidInterface from './pages/BidInterface/BidInterface';
+import Bidding from './pages/Bidding/Bidding';
+import LiveBidding from './pages/Bidding/LiveBidding';
 import Profile from './pages/Profile/Profile';
 import Stations from './pages/Stations/Stations';
 import BidHistory from './pages/BidHistory/BidHistory';
@@ -96,6 +98,8 @@ function App() {
           }>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="bidding" element={<Bidding />} />
+            <Route path="live-bid/:sessionId" element={<LiveBidding />} />
             <Route path="bid/:sessionId" element={<BidInterface />} />
             <Route path="profile" element={<Profile />} />
             <Route path="stations" element={<Stations />} />

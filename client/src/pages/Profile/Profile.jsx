@@ -15,12 +15,22 @@ import {
   Eye,
   EyeOff,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  Target,
+  Settings,
+  BarChart3,
+  Play,
+  Pause,
+  Users,
+  Star,
+  TrendingUp
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import BidPreferences from './BidPreferences';
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
@@ -31,6 +41,14 @@ const Profile = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  
+  // Bid session states
+  const [currentSessions, setCurrentSessions] = useState([]);
+  const [bidHistory, setBidHistory] = useState([]);
+  const [bidPreferences, setBidPreferences] = useState({});
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [showBidPreferences, setShowBidPreferences] = useState(false);
 
   const {
     register,
@@ -87,6 +105,50 @@ const Profile = () => {
     }
   }, [user, reset]);
 
+  // Fetch bid session data
+  useEffect(() => {
+    fetchBidSessions();
+    fetchBidHistory();
+    fetchBidPreferences();
+  }, []);
+
+  const fetchBidSessions = async () => {
+    try {
+      setSessionsLoading(true);
+      const response = await api.get('/api/bid-sessions/active');
+      setCurrentSessions(response.data.sessions || []);
+    } catch (error) {
+      console.error('Error fetching bid sessions:', error);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  const fetchBidHistory = async () => {
+    try {
+      setHistoryLoading(true);
+      const response = await api.get('/api/users/bid-history');
+      setBidHistory(response.data.bidHistory || []);
+    } catch (error) {
+      console.error('Error fetching bid history:', error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const fetchBidPreferences = async () => {
+    try {
+      const response = await api.get('/api/users/preferences');
+      setBidPreferences(response.data.preferences || {});
+    } catch (error) {
+      console.error('Error fetching bid preferences:', error);
+    }
+  };
+
+  const handlePreferencesUpdate = () => {
+    fetchBidPreferences();
+  };
+
   const onSubmit = async (data) => {
     setLoading(true);
     try {
@@ -130,6 +192,48 @@ const Profile = () => {
     resetPassword();
   };
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getSessionStatusColor = (status) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'draft':
+        return 'bg-gray-100 text-gray-800';
+      case 'scheduled':
+        return 'bg-blue-100 text-blue-800';
+      case 'paused':
+        return 'bg-orange-100 text-orange-800';
+      case 'completed':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getBidStatusColor = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'active':
+        return 'bg-blue-100 text-blue-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -145,7 +249,7 @@ const Profile = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Profile Management</h1>
           <p className="mt-2 text-gray-600">
-            Manage your personal information and account settings
+            Manage your personal information and bid session preferences
           </p>
         </div>
         {!isEditing && (
@@ -160,7 +264,6 @@ const Profile = () => {
         )}
       </div>
       
-
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Information */}
@@ -417,6 +520,140 @@ const Profile = () => {
               </div>
             </div>
           </div>
+
+          {/* Current Bid Sessions */}
+          <div className="card">
+            <div className="card-header">
+              <h3 className="text-lg font-medium text-gray-900">Current Bid Sessions</h3>
+            </div>
+            <div className="card-body">
+              {sessionsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <LoadingSpinner size="md" />
+                </div>
+              ) : currentSessions.length > 0 ? (
+                <div className="space-y-4">
+                  {currentSessions.map((session) => (
+                    <div key={session._id} className="border rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                            <Calendar className="w-5 h-5 text-primary-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-gray-900">{session.name}</h4>
+                            <p className="text-sm text-gray-500">{session.description}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSessionStatusColor(session.status)}`}>
+                            {session.status}
+                          </span>
+                          {session.status === 'active' && (
+                            <Play className="w-4 h-4 text-green-600" />
+                          )}
+                          {session.status === 'paused' && (
+                            <Pause className="w-4 h-4 text-orange-600" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
+                        <div className="flex items-center">
+                          <Clock className="w-4 h-4 text-gray-400 mr-2" />
+                          <span className="text-gray-600">
+                            {formatDate(session.scheduledStart)} - {formatDate(session.scheduledEnd)}
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <Users className="w-4 h-4 text-gray-400 mr-2" />
+                          <span className="text-gray-600">
+                            {session.participantCount || 0} participants
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Sessions</h3>
+                  <p className="text-gray-600">
+                    There are no active bid sessions at the moment.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Recent Bid History */}
+          <div className="card">
+            <div className="card-header">
+              <h3 className="text-lg font-medium text-gray-900">Recent Bid History</h3>
+            </div>
+            <div className="card-body">
+              {historyLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <LoadingSpinner size="md" />
+                </div>
+              ) : bidHistory.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Session
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Station
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Priority
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {bidHistory.slice(0, 5).map((bid) => (
+                        <tr key={bid._id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            {formatDate(bid.createdAt)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            {bid.session?.name || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            {bid.station?.name || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getBidStatusColor(bid.status)}`}>
+                              {bid.status || 'Unknown'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            #{bid.bidPriority || 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Bid History</h3>
+                  <p className="text-gray-600">
+                    You haven't participated in any bid sessions yet.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Sidebar */}
@@ -462,8 +699,94 @@ const Profile = () => {
                       #{user.bidPriority || 'N/A'}
                     </span>
                   </div>
+                  <div className="flex items-center text-sm">
+                    <Star className="w-4 h-4 text-gray-400 mr-2" />
+                    <span className="text-gray-600">Seniority:</span>
+                    <span className="ml-auto font-medium text-gray-900">
+                      {user.seniority || 'N/A'}
+                    </span>
+                  </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Bid Statistics */}
+          <div className="card">
+            <div className="card-header">
+              <h3 className="text-lg font-medium text-gray-900">Bid Statistics</h3>
+            </div>
+            <div className="card-body">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Total Bids</span>
+                  <span className="font-medium text-gray-900">{bidHistory.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Successful</span>
+                  <span className="font-medium text-green-600">
+                    {bidHistory.filter(bid => bid.status === 'completed').length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Success Rate</span>
+                  <span className="font-medium text-blue-600">
+                    {bidHistory.length > 0 
+                      ? Math.round((bidHistory.filter(bid => bid.status === 'completed').length / bidHistory.length) * 100)
+                      : 0}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Active Sessions</span>
+                  <span className="font-medium text-orange-600">
+                    {currentSessions.filter(s => s.status === 'active').length}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bid Preferences */}
+          <div className="card">
+            <div className="card-header">
+              <h3 className="text-lg font-medium text-gray-900">Bid Preferences</h3>
+            </div>
+            <div className="card-body">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Preferred Shifts</span>
+                  <span className="font-medium text-gray-900">
+                    {bidPreferences.preferredShifts?.join(', ') || 'Any'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Preferred Stations</span>
+                  <span className="font-medium text-gray-900">
+                    {bidPreferences.preferredStations?.join(', ') || 'Any'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Auto-Bid</span>
+                  <span className={`font-medium ${bidPreferences.autoBid ? 'text-green-600' : 'text-gray-600'}`}>
+                    {bidPreferences.autoBid ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Notifications</span>
+                  <span className={`font-medium ${bidPreferences.notifications ? 'text-green-600' : 'text-gray-600'}`}>
+                    {bidPreferences.notifications ? 'On' : 'Off'}
+                  </span>
+                </div>
+              </div>
+              <Button
+                onClick={() => setShowBidPreferences(true)}
+                variant="secondary"
+                size="sm"
+                className="w-full mt-4"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Manage Preferences
+              </Button>
             </div>
           </div>
 
@@ -624,6 +947,14 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Bid Preferences Modal */}
+      {showBidPreferences && (
+        <BidPreferences 
+          onClose={() => setShowBidPreferences(false)}
+          onUpdate={handlePreferencesUpdate}
+        />
+      )}
     </div>
   );
 };

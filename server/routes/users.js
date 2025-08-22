@@ -78,11 +78,30 @@ router.put('/profile', [
   }
 });
 
+// Get user preferences
+router.get('/preferences', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('bidPreferences');
+    res.json({ preferences: user.bidPreferences || {} });
+  } catch (error) {
+    console.error('Get preferences error:', error);
+    res.status(500).json({ error: 'Failed to get preferences' });
+  }
+});
+
 // Update user preferences
 router.put('/preferences', [
   body('preferredStations').optional().isArray(),
   body('preferredShifts').optional().isArray(),
-  body('preferredShifts.*').optional().isIn(['A', 'B', 'C'])
+  body('preferredShifts.*').optional().isIn(['Day', 'Night', 'Swing', '24/48', '48/96']),
+  body('autoBid').optional().isBoolean(),
+  body('notifications').optional().isBoolean(),
+  body('emailNotifications').optional().isBoolean(),
+  body('smsNotifications').optional().isBoolean(),
+  body('bidReminders').optional().isBoolean(),
+  body('autoBidStrategy').optional().isIn(['preferred', 'closest', 'seniority', 'random']),
+  body('maxBidAttempts').optional().isInt({ min: 1, max: 10 }),
+  body('bidTimeout').optional().isInt({ min: 10, max: 300 })
 ], authenticateToken, async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -90,23 +109,41 @@ router.put('/preferences', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { preferredStations, preferredShifts } = req.body;
+    const {
+      preferredStations,
+      preferredShifts,
+      autoBid,
+      notifications,
+      emailNotifications,
+      smsNotifications,
+      bidReminders,
+      autoBidStrategy,
+      maxBidAttempts,
+      bidTimeout
+    } = req.body;
 
     const updateData = {};
-    if (preferredStations !== undefined) updateData.preferredStations = preferredStations;
-    if (preferredShifts !== undefined) updateData.preferredShifts = preferredShifts;
+    if (preferredStations !== undefined) updateData['bidPreferences.preferredStations'] = preferredStations;
+    if (preferredShifts !== undefined) updateData['bidPreferences.preferredShifts'] = preferredShifts;
+    if (autoBid !== undefined) updateData['bidPreferences.autoBid'] = autoBid;
+    if (notifications !== undefined) updateData['bidPreferences.notifications'] = notifications;
+    if (emailNotifications !== undefined) updateData['bidPreferences.emailNotifications'] = emailNotifications;
+    if (smsNotifications !== undefined) updateData['bidPreferences.smsNotifications'] = smsNotifications;
+    if (bidReminders !== undefined) updateData['bidPreferences.bidReminders'] = bidReminders;
+    if (autoBidStrategy !== undefined) updateData['bidPreferences.autoBidStrategy'] = autoBidStrategy;
+    if (maxBidAttempts !== undefined) updateData['bidPreferences.maxBidAttempts'] = maxBidAttempts;
+    if (bidTimeout !== undefined) updateData['bidPreferences.bidTimeout'] = bidTimeout;
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
       updateData,
       { new: true }
     )
-    .select('-password')
-    .populate('preferredStations', 'name number');
+    .select('bidPreferences');
 
     res.json({ 
       message: 'Preferences updated successfully',
-      user 
+      preferences: user.bidPreferences
     });
 
   } catch (error) {

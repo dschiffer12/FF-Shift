@@ -13,17 +13,10 @@ const stationRoutes = require('./routes/stations');
 const bidSessionRoutes = require('./routes/bidSessions');
 const adminRoutes = require('./routes/admin');
 
-const { authenticateSocket } = require('./middleware/auth');
-const { handleSocketConnection } = require('./socket/connection');
+const { initializeSocket } = require('./socket');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
-});
 
 // Trust proxy for rate limiting
 app.set('trust proxy', 1);
@@ -66,9 +59,8 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Socket.IO middleware and connection handling
-io.use(authenticateSocket);
-io.on('connection', (socket) => handleSocketConnection(socket, io));
+// Initialize Socket.IO
+initializeSocket(server);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -91,4 +83,4 @@ server.listen(PORT, () => {
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
-module.exports = { app, server, io };
+module.exports = { app, server };

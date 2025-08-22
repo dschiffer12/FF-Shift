@@ -117,6 +117,54 @@ const userSchema = new mongoose.Schema({
     enum: ['A', 'B', 'C']
   }],
   
+  // Bid Preferences
+  bidPreferences: {
+    preferredShifts: [{
+      type: String,
+      enum: ['Day', 'Night', 'Swing', '24/48', '48/96']
+    }],
+    preferredStations: [{
+      type: String
+    }],
+    autoBid: {
+      type: Boolean,
+      default: false
+    },
+    notifications: {
+      type: Boolean,
+      default: true
+    },
+    emailNotifications: {
+      type: Boolean,
+      default: true
+    },
+    smsNotifications: {
+      type: Boolean,
+      default: false
+    },
+    bidReminders: {
+      type: Boolean,
+      default: true
+    },
+    autoBidStrategy: {
+      type: String,
+      enum: ['preferred', 'closest', 'seniority', 'random'],
+      default: 'preferred'
+    },
+    maxBidAttempts: {
+      type: Number,
+      min: 1,
+      max: 10,
+      default: 3
+    },
+    bidTimeout: {
+      type: Number,
+      min: 10,
+      max: 300,
+      default: 30
+    }
+  },
+  
   // Timestamps
   lastLogin: Date,
   createdAt: {

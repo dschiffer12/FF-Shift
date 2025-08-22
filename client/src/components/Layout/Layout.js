@@ -11,7 +11,8 @@ import {
   Menu, 
   X,
   BarChart3,
-  Shield
+  Shield,
+  Target
 } from 'lucide-react';
 import Button from '../UI/Button';
 
@@ -23,6 +24,7 @@ const Layout = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Bidding', href: '/bidding', icon: Target },
     { name: 'Profile', href: '/profile', icon: User },
     ...(user?.isAdmin ? [
       { name: 'Admin Dashboard', href: '/admin', icon: BarChart3 },
