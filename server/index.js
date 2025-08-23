@@ -23,10 +23,18 @@ app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:3000",
-  credentials: true
-}));
+
+// CORS configuration - exclude Socket.IO paths
+app.use((req, res, next) => {
+  if (req.path.startsWith('/socket.io/')) {
+    return next();
+  }
+  
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    credentials: true
+  })(req, res, next);
+});
 
 // Rate limiting
 const limiter = rateLimit({

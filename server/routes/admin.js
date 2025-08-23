@@ -89,6 +89,111 @@ router.get('/recent-activity', async (req, res) => {
   }
 });
 
+// GET /api/admin/user-activity - Get recent user activity
+router.get('/user-activity', async (req, res) => {
+  try {
+    // For now, return sample user activity data
+    // In a real implementation, you'd track user actions in a separate collection
+    const activities = [
+      {
+        type: 'login',
+        userName: 'John Smith',
+        action: 'Logged into the system',
+        timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
+        isOnline: true
+      },
+      {
+        type: 'bid',
+        userName: 'Sarah Johnson',
+        action: 'Submitted bid for Station 1',
+        timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
+        isOnline: true
+      },
+      {
+        type: 'session',
+        userName: 'Mike Wilson',
+        action: 'Joined bid session "Annual 2024"',
+        timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
+        isOnline: false
+      },
+      {
+        type: 'login',
+        userName: 'Emily Davis',
+        action: 'Logged into the system',
+        timestamp: new Date(Date.now() - 1000 * 60 * 45), // 45 minutes ago
+        isOnline: true
+      },
+      {
+        type: 'bid',
+        userName: 'David Brown',
+        action: 'Viewed bid session details',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60), // 1 hour ago
+        isOnline: false
+      }
+    ];
+
+    res.json({ activities });
+  } catch (error) {
+    console.error('Error fetching user activity:', error);
+    res.status(500).json({ error: 'Failed to fetch user activity' });
+  }
+});
+
+// GET /api/admin/online-users - Get currently online users
+router.get('/online-users', async (req, res) => {
+  try {
+    // For now, return sample online users data
+    // In a real implementation, you'd track online status via Socket.IO
+    const users = [
+      {
+        userId: '1',
+        firstName: 'John',
+        lastName: 'Smith',
+        rank: 'Firefighter',
+        isOnline: true,
+        lastSeen: new Date()
+      },
+      {
+        userId: '2',
+        firstName: 'Sarah',
+        lastName: 'Johnson',
+        rank: 'Lieutenant',
+        isOnline: true,
+        lastSeen: new Date(Date.now() - 1000 * 60 * 2) // 2 minutes ago
+      },
+      {
+        userId: '3',
+        firstName: 'Emily',
+        lastName: 'Davis',
+        rank: 'Captain',
+        isOnline: true,
+        lastSeen: new Date(Date.now() - 1000 * 60 * 5) // 5 minutes ago
+      },
+      {
+        userId: '4',
+        firstName: 'Mike',
+        lastName: 'Wilson',
+        rank: 'Engineer',
+        isOnline: false,
+        lastSeen: new Date(Date.now() - 1000 * 60 * 30) // 30 minutes ago
+      },
+      {
+        userId: '5',
+        firstName: 'David',
+        lastName: 'Brown',
+        rank: 'Firefighter',
+        isOnline: false,
+        lastSeen: new Date(Date.now() - 1000 * 60 * 60) // 1 hour ago
+      }
+    ];
+
+    res.json({ users });
+  } catch (error) {
+    console.error('Error fetching online users:', error);
+    res.status(500).json({ error: 'Failed to fetch online users' });
+  }
+});
+
 // GET /api/admin/users - Get all users (for user management)
 router.get('/users', async (req, res) => {
   try {

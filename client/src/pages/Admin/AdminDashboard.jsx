@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSocket } from '../../contexts/SocketContext';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
@@ -21,15 +22,25 @@ import {
   Edit3,
   Trash2,
   RefreshCw,
-  Download
+  Download,
+  Play,
+  Pause,
+  User,
+  Wifi,
+  WifiOff,
+  Bell,
+  BellOff,
+  Timer,
+  Target
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
-import api from '../../services/api';
+import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
+  const { socket, isConnected } = useSocket();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -41,6 +52,11 @@ const AdminDashboard = () => {
     pendingApprovals: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  const [userActivity, setUserActivity] = useState([]);
+  const [bidSessions, setBidSessions] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [activeBidWindows, setActiveBidWindows] = useState([]);
+  
   const systemStatus = {
     database: 'online',
     email: 'online',
@@ -48,9 +64,109 @@ const AdminDashboard = () => {
     lastBackup: new Date().toISOString()
   };
 
+  // Add countdown timer state
+  const [currentTime, setCurrentTime] = useState(new Date());
+
   useEffect(() => {
     fetchDashboardData();
+    fetchUserActivity();
+    fetchBidSessions();
+    fetchOnlineUsers();
   }, []);
+
+  // Add countdown timer effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Listen for real-time updates
+    const handleUserActivity = (data) => {
+      setUserActivity(prev => [data, ...prev.slice(0, 19)]); // Keep last 20 activities
+      updateStats();
+    };
+
+    const handleBidSessionUpdate = (data) => {
+      setBidSessions(prev => 
+        prev.map(session => 
+          session.id === data.sessionId 
+            ? { ...session, ...data.updates }
+            : session
+        )
+      );
+      updateActiveBidWindows();
+    };
+
+    const handleUserOnlineStatus = (data) => {
+      setOnlineUsers(prev => {
+        const existing = prev.find(u => u.userId === data.userId);
+        if (existing) {
+          return prev.map(u => 
+            u.userId === data.userId 
+              ? { ...u, isOnline: data.isOnline, lastSeen: data.lastSeen }
+              : u
+          );
+        } else {
+          return [...prev, data];
+        }
+      });
+    };
+
+    const handleNewBidSession = (data) => {
+      setBidSessions(prev => [data.session, ...prev]);
+      updateStats();
+    };
+
+    const handleBidSessionStarted = (data) => {
+      setBidSessions(prev => 
+        prev.map(session => 
+          session.id === data.sessionId 
+            ? { ...session, status: 'active', startedAt: data.startedAt }
+            : session
+        )
+      );
+      updateActiveBidWindows();
+      toast.success(`Bid session "${data.sessionName}" has started!`);
+    };
+
+    const handleBidSessionCompleted = (data) => {
+      setBidSessions(prev => 
+        prev.map(session => 
+          session.id === data.sessionId 
+            ? { ...session, status: 'completed', completedAt: data.completedAt }
+            : session
+        )
+      );
+      updateActiveBidWindows();
+      toast.success(`Bid session "${data.sessionName}" has completed!`);
+    };
+
+    // Socket event listeners
+    socket.on('user-activity', handleUserActivity);
+    socket.on('bid-session-update', handleBidSessionUpdate);
+    socket.on('user-online-status', handleUserOnlineStatus);
+    socket.on('new-bid-session', handleNewBidSession);
+    socket.on('bid-session-started', handleBidSessionStarted);
+    socket.on('bid-session-completed', handleBidSessionCompleted);
+
+    // Join admin room for notifications
+    socket.emit('join-admin-room');
+
+    return () => {
+      socket.off('user-activity', handleUserActivity);
+      socket.off('bid-session-update', handleBidSessionUpdate);
+      socket.off('user-online-status', handleUserOnlineStatus);
+      socket.off('new-bid-session', handleNewBidSession);
+      socket.off('bid-session-started', handleBidSessionStarted);
+      socket.off('bid-session-completed', handleBidSessionCompleted);
+    };
+  }, [socket, isConnected]);
 
   const fetchDashboardData = async () => {
     try {
@@ -68,6 +184,51 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchUserActivity = async () => {
+    try {
+      const response = await api.get('/api/admin/user-activity');
+      setUserActivity(response.data.activities || []);
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+    }
+  };
+
+  const fetchBidSessions = async () => {
+    try {
+      const response = await api.get(endpoints.bidSessions.list);
+      setBidSessions(response.data.sessions || []);
+      updateActiveBidWindows();
+    } catch (error) {
+      console.error('Error fetching bid sessions:', error);
+    }
+  };
+
+  const fetchOnlineUsers = async () => {
+    try {
+      const response = await api.get('/api/admin/online-users');
+      setOnlineUsers(response.data.users || []);
+    } catch (error) {
+      console.error('Error fetching online users:', error);
+    }
+  };
+
+  const updateStats = () => {
+    // Update stats based on current data
+    setStats(prev => ({
+      ...prev,
+      activeUsers: onlineUsers.filter(u => u.isOnline).length,
+      activeBidSessions: bidSessions.filter(s => s.status === 'active').length,
+      completedBidSessions: bidSessions.filter(s => s.status === 'completed').length
+    }));
+  };
+
+  const updateActiveBidWindows = () => {
+    const active = bidSessions.filter(session => 
+      session.status === 'active' && session.currentParticipant
+    );
+    setActiveBidWindows(active);
   };
 
   const handleQuickAction = (action) => {
@@ -118,6 +279,36 @@ const AdminDashboard = () => {
     }
   };
 
+  const getBidSessionStatusColor = (status) => {
+    switch (status) {
+      case 'draft':
+        return 'bg-gray-100 text-gray-800';
+      case 'scheduled':
+        return 'bg-blue-100 text-blue-800';
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'paused':
+        return 'bg-orange-100 text-orange-800';
+      case 'completed':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatTimeRemaining = (endTime) => {
+    if (!endTime) return 'N/A';
+    const end = new Date(endTime);
+    const diff = end - currentTime;
+    
+    if (diff <= 0) return 'Expired';
+    
+    const minutes = Math.floor(diff / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -137,6 +328,12 @@ const AdminDashboard = () => {
           </p>
         </div>
         <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-sm text-gray-600">
+              {isConnected ? 'Connected' : 'Disconnected'}
+            </span>
+          </div>
           <Button
             onClick={() => fetchDashboardData()}
             variant="secondary"
@@ -272,6 +469,76 @@ const AdminDashboard = () => {
         </div>
       </div>
 
+      {/* Active Bid Windows Section */}
+      {activeBidWindows.length > 0 && (
+        <div className="card">
+          <div className="card-header">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900">Active Bid Windows</h3>
+              <span className="text-sm text-gray-500">
+                {activeBidWindows.length} active session{activeBidWindows.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
+          <div className="card-body">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activeBidWindows.map((session) => (
+                <div key={session.id} className="border rounded-lg p-4 bg-gradient-to-r from-green-50 to-blue-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-gray-900">{session.name}</h4>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getBidSessionStatusColor(session.status)}`}>
+                      Active
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Current Participant:</span>
+                      <span className="font-medium">{session.currentParticipant || 'N/A'}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Time Remaining:</span>
+                      <span className="font-medium text-orange-600">
+                        {formatTimeRemaining(session.currentBidEnd)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Progress:</span>
+                      <span className="font-medium">
+                        {session.completedBids || 0}/{session.totalParticipants || 0}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex space-x-2">
+                    <Button
+                      onClick={() => navigate(`/admin/bid-sessions`)}
+                      variant="secondary"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View
+                    </Button>
+                    <Button
+                      onClick={() => navigate(`/admin/bid-sessions`)}
+                      variant="primary"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <Pause className="w-4 h-4 mr-1" />
+                      Pause
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
         <div className="lg:col-span-1">
@@ -333,6 +600,47 @@ const AdminDashboard = () => {
             </div>
           </div>
 
+          {/* Online Users */}
+          <div className="card mt-6">
+            <div className="card-header">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900">Online Users</h3>
+                <span className="text-sm text-gray-500">
+                  {onlineUsers.filter(u => u.isOnline).length} online
+                </span>
+              </div>
+            </div>
+            <div className="card-body">
+              <div className="space-y-3">
+                {onlineUsers.filter(u => u.isOnline).slice(0, 5).map((user) => (
+                  <div key={user.userId} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <User className="w-4 h-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {user.firstName} {user.lastName}
+                        </p>
+                        <p className="text-xs text-gray-500">{user.rank}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-xs text-gray-500">Online</span>
+                    </div>
+                  </div>
+                ))}
+                {onlineUsers.filter(u => u.isOnline).length === 0 && (
+                  <div className="text-center py-4">
+                    <WifiOff className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">No users online</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* System Status */}
           <div className="card mt-6">
             <div className="card-header">
@@ -363,65 +671,117 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* User Activity and Recent Activity */}
         <div className="lg:col-span-2">
-          <div className="card">
-            <div className="card-header">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
-                <Button variant="secondary" size="sm">
-                  View All
-                </Button>
+          <div className="grid grid-cols-1 gap-6">
+            {/* User Activity */}
+            <div className="card">
+              <div className="card-header">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-900">User Activity</h3>
+                  <Button variant="secondary" size="sm">
+                    View All
+                  </Button>
+                </div>
+              </div>
+              <div className="card-body">
+                {userActivity.length > 0 ? (
+                  <div className="space-y-4">
+                    {userActivity.slice(0, 8).map((activity, index) => (
+                      <div key={index} className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          {activity.type === 'login' && <User className="w-4 h-4 text-blue-600" />}
+                          {activity.type === 'bid' && <Target className="w-4 h-4 text-blue-600" />}
+                          {activity.type === 'session' && <Clock className="w-4 h-4 text-blue-600" />}
+                          {activity.type === 'system' && <Settings className="w-4 h-4 text-blue-600" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900">
+                            {activity.userName}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {activity.action}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(activity.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {activity.isOnline && (
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No recent user activity</p>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="card-body">
-              {recentActivity.length > 0 ? (
-                <div className="space-y-4">
-                  {recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        {activity.type === 'user' && <Users className="w-4 h-4 text-gray-600" />}
-                        {activity.type === 'station' && <Building2 className="w-4 h-4 text-gray-600" />}
-                        {activity.type === 'bid' && <Clock className="w-4 h-4 text-gray-600" />}
-                        {activity.type === 'system' && <Settings className="w-4 h-4 text-gray-600" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">
-                          {activity.title}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {activity.description}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {new Date(activity.timestamp).toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {activity.action === 'view' && (
-                          <Button variant="ghost" size="sm">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {activity.action === 'edit' && (
-                          <Button variant="ghost" size="sm">
-                            <Edit3 className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {activity.action === 'delete' && (
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+
+            {/* Recent System Activity */}
+            <div className="card">
+              <div className="card-header">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-900">Recent System Activity</h3>
+                  <Button variant="secondary" size="sm">
+                    View All
+                  </Button>
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No recent activity</p>
-                </div>
-              )}
+              </div>
+              <div className="card-body">
+                {recentActivity.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentActivity.slice(0, 6).map((activity, index) => (
+                      <div key={index} className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          {activity.type === 'user' && <Users className="w-4 h-4 text-gray-600" />}
+                          {activity.type === 'station' && <Building2 className="w-4 h-4 text-gray-600" />}
+                          {activity.type === 'bid' && <Clock className="w-4 h-4 text-gray-600" />}
+                          {activity.type === 'system' && <Settings className="w-4 h-4 text-gray-600" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900">
+                            {activity.title}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {activity.description}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(activity.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {activity.action === 'view' && (
+                            <Button variant="ghost" size="sm">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {activity.action === 'edit' && (
+                            <Button variant="ghost" size="sm">
+                              <Edit3 className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {activity.action === 'delete' && (
+                            <Button variant="ghost" size="sm">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No recent activity</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

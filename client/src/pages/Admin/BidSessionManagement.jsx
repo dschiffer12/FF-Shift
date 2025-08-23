@@ -152,9 +152,9 @@ const BidSessionManagement = () => {
 
   const handleUpdateSession = async (data) => {
     try {
-      const response = await api.put(endpoints.bidSessions.detail(selectedSession._id), data);
+      const response = await api.put(endpoints.bidSessions.detail(selectedSession.id), data);
       setBidSessions(bidSessions.map(session => 
-        session._id === selectedSession._id ? response.data.bidSession : session
+        session.id === selectedSession.id ? response.data.bidSession : session
       ));
       setIsEditing(false);
       setSelectedSession(null);
@@ -173,7 +173,7 @@ const BidSessionManagement = () => {
 
     try {
       await api.delete(endpoints.bidSessions.detail(sessionId));
-      setBidSessions(bidSessions.filter(session => session._id !== sessionId));
+      setBidSessions(bidSessions.filter(session => session.id !== sessionId));
       toast.success('Bid session deleted successfully');
     } catch (error) {
       console.error('Error deleting bid session:', error);
@@ -400,7 +400,7 @@ const BidSessionManagement = () => {
       {/* Bid Sessions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredSessions.map((session) => (
-          <div key={session._id} className="card hover:shadow-lg transition-shadow">
+          <div key={session.id} className="card hover:shadow-lg transition-shadow">
             <div className="card-header">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -460,7 +460,7 @@ const BidSessionManagement = () => {
                   </Button>
                   {(session.status === 'draft' || session.status === 'scheduled') && (
                     <Button
-                      onClick={() => handleStartSession(session._id)}
+                      onClick={() => handleStartSession(session.id)}
                       variant="ghost"
                       size="sm"
                       className="text-green-600 hover:text-green-800"
@@ -470,7 +470,7 @@ const BidSessionManagement = () => {
                   )}
                   {session.status === 'active' && (
                     <Button
-                      onClick={() => handlePauseSession(session._id)}
+                      onClick={() => handlePauseSession(session.id)}
                       variant="ghost"
                       size="sm"
                       className="text-orange-600 hover:text-orange-800"
@@ -480,7 +480,7 @@ const BidSessionManagement = () => {
                   )}
                   {session.status === 'paused' && (
                     <Button
-                      onClick={() => handleResumeSession(session._id)}
+                      onClick={() => handleResumeSession(session.id)}
                       variant="ghost"
                       size="sm"
                       className="text-green-600 hover:text-green-800"
@@ -489,7 +489,7 @@ const BidSessionManagement = () => {
                     </Button>
                   )}
                   <Button
-                    onClick={() => handleDeleteSession(session._id)}
+                    onClick={() => handleDeleteSession(session.id)}
                     variant="ghost"
                     size="sm"
                     className="text-red-600 hover:text-red-800"

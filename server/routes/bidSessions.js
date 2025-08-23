@@ -397,10 +397,18 @@ router.delete('/:id/participants/:userId', authenticateAdmin, async (req, res) =
 // Start bid session (admin only)
 router.post('/:id/start', authenticateAdmin, async (req, res) => {
   try {
+    console.log('Starting bid session with ID:', req.params.id);
+    
+    if (!req.params.id || req.params.id === 'undefined') {
+      return res.status(400).json({ error: 'Invalid session ID provided' });
+    }
+
     const bidSession = await BidSession.findById(req.params.id);
     if (!bidSession) {
       return res.status(404).json({ error: 'Bid session not found' });
     }
+
+    console.log('Found bid session:', bidSession.name, 'Status:', bidSession.status);
 
     if (bidSession.status !== 'scheduled' && bidSession.status !== 'draft') {
       return res.status(400).json({ error: 'Session must be scheduled or draft to start' });
@@ -410,6 +418,7 @@ router.post('/:id/start', authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Cannot start session without participants' });
     }
 
+    console.log('Starting session with', bidSession.participants.length, 'participants');
     await bidSession.startSession();
 
     // Emit socket notification to all participants
@@ -445,6 +454,12 @@ router.post('/:id/start', authenticateAdmin, async (req, res) => {
 // Pause bid session (admin only)
 router.post('/:id/pause', authenticateAdmin, async (req, res) => {
   try {
+    console.log('Pausing bid session with ID:', req.params.id);
+    
+    if (!req.params.id || req.params.id === 'undefined') {
+      return res.status(400).json({ error: 'Invalid session ID provided' });
+    }
+
     const bidSession = await BidSession.findById(req.params.id);
     if (!bidSession) {
       return res.status(404).json({ error: 'Bid session not found' });
@@ -454,6 +469,7 @@ router.post('/:id/pause', authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Session must be active to pause' });
     }
 
+    console.log('Pausing session:', bidSession.name);
     await bidSession.pauseSession();
 
     // Emit socket notification to all participants
@@ -486,6 +502,12 @@ router.post('/:id/pause', authenticateAdmin, async (req, res) => {
 // Resume bid session (admin only)
 router.post('/:id/resume', authenticateAdmin, async (req, res) => {
   try {
+    console.log('Resuming bid session with ID:', req.params.id);
+    
+    if (!req.params.id || req.params.id === 'undefined') {
+      return res.status(400).json({ error: 'Invalid session ID provided' });
+    }
+
     const bidSession = await BidSession.findById(req.params.id);
     if (!bidSession) {
       return res.status(404).json({ error: 'Bid session not found' });
@@ -495,6 +517,7 @@ router.post('/:id/resume', authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Session must be paused to resume' });
     }
 
+    console.log('Resuming session:', bidSession.name);
     await bidSession.resumeSession();
 
     // Emit socket notification to all participants

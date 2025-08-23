@@ -48,18 +48,54 @@ const initializeSocket = (server) => {
         socket.join('admin_room');
         console.log(`Admin ${socket.user.email} joined admin room`);
       }
+
+      // Emit user online status to admin room
+      io.to('admin_room').emit('user-online-status', {
+        userId: socket.user._id,
+        firstName: socket.user.firstName,
+        lastName: socket.user.lastName,
+        rank: socket.user.rank,
+        isOnline: true,
+        lastSeen: new Date()
+      });
+
+      // Emit user activity to admin room
+      io.to('admin_room').emit('user-activity', {
+        type: 'login',
+        userName: `${socket.user.firstName} ${socket.user.lastName}`,
+        action: 'Logged into the system',
+        timestamp: new Date(),
+        isOnline: true
+      });
     });
 
     // Join bid session room
     socket.on('join-bid-session', (data) => {
       socket.join(`bid-session-${data.sessionId}`);
       console.log(`User ${socket.user.email} joined bid session: ${data.sessionId}`);
+
+      // Emit user activity to admin room
+      io.to('admin_room').emit('user-activity', {
+        type: 'session',
+        userName: `${socket.user.firstName} ${socket.user.lastName}`,
+        action: `Joined bid session`,
+        timestamp: new Date(),
+        isOnline: true
+      });
     });
 
     // Leave bid session room
     socket.on('leave-bid-session', (data) => {
       socket.leave(`bid-session-${data.sessionId}`);
       console.log(`User ${socket.user.email} left bid session: ${data.sessionId}`);
+    });
+
+    // Join admin room specifically
+    socket.on('join-admin-room', () => {
+      if (socket.user.isAdmin) {
+        socket.join('admin_room');
+        console.log(`Admin ${socket.user.email} joined admin room`);
+      }
     });
 
     // Submit bid
@@ -101,6 +137,24 @@ const initializeSocket = (server) => {
             station: bidData.station,
             shift: bidData.shift,
             position: bidData.position
+          });
+
+          // Emit user activity to admin room
+          io.to('admin_room').emit('user-activity', {
+            type: 'bid',
+            userName: `${socket.user.firstName} ${socket.user.lastName}`,
+            action: `Submitted bid for station`,
+            timestamp: new Date(),
+            isOnline: true
+          });
+
+          // Emit bid session update to admin room
+          io.to('admin_room').emit('bid-session-update', {
+            sessionId,
+            updates: {
+              completedBids: bidSession.completedBids + 1,
+              currentParticipant: bidSession.currentParticipant + 1
+            }
           });
 
           // Move to next participant
@@ -260,6 +314,25 @@ const initializeSocket = (server) => {
 
     socket.on('disconnect', () => {
       console.log(`User disconnected: ${socket.user.email} (${socket.id})`);
+      
+      // Emit user offline status to admin room
+      io.to('admin_room').emit('user-online-status', {
+        userId: socket.user._id,
+        firstName: socket.user.firstName,
+        lastName: socket.user.lastName,
+        rank: socket.user.rank,
+        isOnline: false,
+        lastSeen: new Date()
+      });
+      
+      // Emit user activity to admin room
+      io.to('admin_room').emit('user-activity', {
+        type: 'logout',
+        userName: `${socket.user.firstName} ${socket.user.lastName}`,
+        action: 'Logged out of the system',
+        timestamp: new Date(),
+        isOnline: false
+      });
     });
   });
 

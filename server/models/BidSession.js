@@ -205,7 +205,7 @@ bidSessionSchema.methods.addParticipant = function(userId, bidPriority) {
 bidSessionSchema.methods.startSession = function() {
   this.status = 'active';
   this.actualStart = new Date();
-  this.currentParticipant = 0;
+  this.currentParticipant = 1; // Start with first participant (1-based indexing)
   
   // Set up first participant's time window
   if (this.participants.length > 0) {
@@ -237,13 +237,16 @@ bidSessionSchema.methods.completeSession = function() {
 
 // Method to set current participant's time window
 bidSessionSchema.methods.setCurrentParticipantTimeWindow = function() {
-  if (this.currentParticipant >= this.participants.length) return;
+  if (this.currentParticipant > this.participants.length || this.currentParticipant < 1) return;
   
   const now = new Date();
   const startTime = now;
   const endTime = new Date(now.getTime() + (this.bidWindowDuration * 60 * 1000));
   
-  this.participants[this.currentParticipant].timeWindow = {
+  // Convert to 0-based index for array access
+  const participantIndex = this.currentParticipant - 1;
+  
+  this.participants[participantIndex].timeWindow = {
     start: startTime,
     end: endTime
   };
@@ -254,14 +257,15 @@ bidSessionSchema.methods.setCurrentParticipantTimeWindow = function() {
 
 // Method to advance to next participant
 bidSessionSchema.methods.advanceToNextParticipant = function() {
-  if (this.currentParticipant < this.participants.length) {
-    this.participants[this.currentParticipant].hasBid = true;
+  if (this.currentParticipant <= this.participants.length) {
+    const participantIndex = this.currentParticipant - 1;
+    this.participants[participantIndex].hasBid = true;
     this.completedBids++;
   }
   
   this.currentParticipant++;
   
-  if (this.currentParticipant < this.participants.length) {
+  if (this.currentParticipant <= this.participants.length) {
     this.setCurrentParticipantTimeWindow();
   } else {
     this.completeSession();
@@ -272,9 +276,10 @@ bidSessionSchema.methods.advanceToNextParticipant = function() {
 
 // Method to auto-assign current participant
 bidSessionSchema.methods.autoAssignCurrentParticipant = function() {
-  if (this.currentParticipant >= this.participants.length) return;
+  if (this.currentParticipant > this.participants.length || this.currentParticipant < 1) return;
   
-  const participant = this.participants[this.currentParticipant];
+  const participantIndex = this.currentParticipant - 1;
+  const participant = this.participants[participantIndex];
   participant.autoAssigned = true;
   participant.hasBid = true;
   this.autoAssignments++;
@@ -289,11 +294,12 @@ bidSessionSchema.methods.autoAssignCurrentParticipant = function() {
 
 // Method to process bid
 bidSessionSchema.methods.processBid = function(stationId, shift, position) {
-  if (this.currentParticipant >= this.participants.length) {
+  if (this.currentParticipant > this.participants.length || this.currentParticipant < 1) {
     throw new Error('No current participant');
   }
   
-  const participant = this.participants[this.currentParticipant];
+  const participantIndex = this.currentParticipant - 1;
+  const participant = this.participants[participantIndex];
   
   // Add to bid history
   participant.bidHistory.push({
