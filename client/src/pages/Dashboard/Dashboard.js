@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { useNavigate } from 'react-router-dom';
@@ -7,14 +7,11 @@ import {
   Building2, 
   Clock, 
   Award, 
-  Calendar,
   CheckCircle,
   AlertTriangle,
   Play,
   Pause,
   Timer,
-  MapPin,
-  Users,
   TrendingUp,
   Bell,
   ArrowRight,
@@ -25,18 +22,34 @@ import {
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
-import api from '../../services/api';
+import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { socket } = useNavigate();
+  const { socket } = useSocket();
   const navigate = useNavigate();
   const [currentBidSession, setCurrentBidSession] = useState(null);
   const [userBidStatus, setUserBidStatus] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
+
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      await Promise.all([
+        fetchCurrentBidSession(),
+        fetchUserBidStatus(),
+        fetchRecentActivity(),
+        fetchNotifications()
+      ]);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
@@ -52,27 +65,11 @@ const Dashboard = () => {
         socket.off('notification');
       };
     }
-  }, [socket]);
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      await Promise.all([
-        fetchCurrentBidSession(),
-        fetchUserBidStatus(),
-        fetchRecentActivity(),
-        fetchNotifications()
-      ]);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [socket, fetchDashboardData]);
 
   const fetchCurrentBidSession = async () => {
     try {
-      const response = await api.get('/api/bid-sessions/active');
+      const response = await api.get(endpoints.bidSessions.current);
       setCurrentBidSession(response.data.session || null);
     } catch (error) {
       console.error('Error fetching current bid session:', error);

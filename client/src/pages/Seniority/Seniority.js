@@ -17,9 +17,8 @@ const Seniority = () => {
   const fetchSeniorityData = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/users/seniority');
+      await api.get('/users/seniority');
       // Store any additional seniority data if needed
-      console.log('Seniority data loaded:', response.data);
     } catch (err) {
       setError('Failed to load seniority information');
       console.error('Error fetching seniority data:', err);

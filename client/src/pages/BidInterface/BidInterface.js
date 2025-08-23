@@ -7,19 +7,16 @@ import {
   Users, 
   AlertTriangle, 
   CheckCircle, 
-  X,
   Play,
   Pause,
   Timer,
-  Award,
   MapPin,
   Calendar,
-  ArrowRight,
   RefreshCw
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
-import api from '../../services/api';
+import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const BidInterface = () => {
@@ -36,7 +33,6 @@ const BidInterface = () => {
   const [bidHistory, setBidHistory] = useState([]);
   const [sessionStatus, setSessionStatus] = useState('waiting');
   
-  const timerRef = useRef(null);
   const countdownRef = useRef(null);
 
   useEffect(() => {
@@ -55,6 +51,7 @@ const BidInterface = () => {
         socket.off('session-ended');
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket]);
 
   useEffect(() => {
@@ -72,7 +69,7 @@ const BidInterface = () => {
   const fetchCurrentSession = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/bid-sessions/active');
+      const response = await api.get(endpoints.bidSessions.current);
       if (response.data.session) {
         setCurrentSession(response.data.session);
         setSessionStatus(response.data.session.status);
@@ -110,8 +107,8 @@ const BidInterface = () => {
 
   const fetchBidHistory = async () => {
     try {
-      const response = await api.get('/api/bid-sessions/history');
-      setBidHistory(response.data.history || []);
+      const response = await api.get(endpoints.users.bidHistory);
+      setBidHistory(response.data.bidHistory || []);
     } catch (error) {
       console.error('Error fetching bid history:', error);
     }
@@ -179,26 +176,16 @@ const BidInterface = () => {
       return;
     }
 
-    try {
-      setSubmittingBid(true);
-      const response = await api.post('/api/bid-sessions/submit-bid', {
-        sessionId: currentSession._id,
-        stationId: selectedStation._id,
-        shift: selectedStation.preferredShift || 'A'
-      });
-
-      if (response.data.success) {
-        toast.success('Bid submitted successfully!');
-        setIsUserTurn(false);
-        setSelectedStation(null);
-        await fetchBidHistory();
-      }
-    } catch (error) {
-      console.error('Error submitting bid:', error);
-      toast.error(error.response?.data?.error || 'Failed to submit bid');
-    } finally {
-      setSubmittingBid(false);
-    }
+    // TODO: Implement Socket.IO bidding instead of HTTP API
+    // Bidding should be handled through Socket.IO events, not HTTP API calls
+    toast.error('Bidding functionality not implemented yet');
+    
+    // Example of how it should work:
+    // socket.emit('submit_bid', {
+    //   sessionId: currentSession._id,
+    //   stationId: selectedStation._id,
+    //   shift: selectedStation.preferredShift || 'A'
+    // });
   };
 
   const formatTime = (seconds) => {

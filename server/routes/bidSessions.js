@@ -28,6 +28,26 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+// Get current/active bid session
+router.get('/current', authenticateToken, async (req, res) => {
+  try {
+    const activeSession = await BidSession.findOne({
+      status: { $in: ['active', 'waiting'] }
+    }).populate('participants.user', 'firstName lastName rank position employeeId')
+      .populate('participants.assignedStation', 'name number')
+      .populate('createdBy', 'firstName lastName');
+
+    if (!activeSession) {
+      return res.status(200).json({ session: null });
+    }
+
+    res.json({ session: activeSession });
+  } catch (error) {
+    console.error('Get current bid session error:', error);
+    res.status(500).json({ error: 'Failed to get current bid session' });
+  }
+});
+
 // Get single bid session
 router.get('/:id', authenticateToken, async (req, res) => {
   try {

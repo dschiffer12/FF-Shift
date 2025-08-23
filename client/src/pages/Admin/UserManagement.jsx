@@ -20,7 +20,9 @@ import {
   AlertCircle,
   UserPlus,
   Download,
-  RefreshCw
+  RefreshCw,
+  TrendingUp,
+  Calendar
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -38,6 +40,8 @@ const UserManagement = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showUserDetails, setShowUserDetails] = useState(false);
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   const {
     register,
@@ -53,6 +57,35 @@ const UserManagement = () => {
     reset: resetEdit,
     setValue: setEditValue
   } = useForm();
+
+  // Calculate seniority score for display
+  const calculateSeniorityScore = (user) => {
+    let score = (user.yearsOfService || 0) * 10;
+    
+    const rankMultipliers = {
+      'Firefighter': 1,
+      'Engineer': 1.2,
+      'Lieutenant': 1.5,
+      'Captain': 2,
+      'Battalion Chief': 3,
+      'Deputy Chief': 4,
+      'Chief': 5
+    };
+    
+    const positionMultipliers = {
+      'Firefighter': 1,
+      'Paramedic': 1.3,
+      'EMT': 1.1,
+      'Driver': 1.2,
+      'Operator': 1.4,
+      'Officer': 1.5
+    };
+    
+    score *= (rankMultipliers[user.rank] || 1);
+    score *= (positionMultipliers[user.position] || 1);
+    
+    return Math.round(score);
+  };
 
   const fetchUsers = async () => {
     try {
@@ -95,12 +128,55 @@ const UserManagement = () => {
       case 'pending':
         filtered = filtered.filter(user => user.status === 'pending');
         break;
+      case 'senior':
+        filtered = filtered.filter(user => (user.yearsOfService || 0) >= 10);
+        break;
+      case 'junior':
+        filtered = filtered.filter(user => (user.yearsOfService || 0) < 5);
+        break;
       default:
         break;
     }
 
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case 'name':
+          aValue = `${a.firstName} ${a.lastName}`.toLowerCase();
+          bValue = `${b.firstName} ${b.lastName}`.toLowerCase();
+          break;
+        case 'seniority':
+          aValue = calculateSeniorityScore(a);
+          bValue = calculateSeniorityScore(b);
+          break;
+        case 'yearsOfService':
+          aValue = a.yearsOfService || 0;
+          bValue = b.yearsOfService || 0;
+          break;
+        case 'rank':
+          aValue = a.rank || '';
+          bValue = b.rank || '';
+          break;
+        case 'email':
+          aValue = a.email || '';
+          bValue = b.email || '';
+          break;
+        default:
+          aValue = a.firstName || '';
+          bValue = b.firstName || '';
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
     setFilteredUsers(filtered);
-  }, [users, searchTerm, selectedFilter]);
+  }, [users, searchTerm, selectedFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchUsers();
@@ -174,6 +250,15 @@ const UserManagement = () => {
     setShowUserDetails(true);
   };
 
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
   const getStatusColor = (user) => {
     if (!user.isActive) return 'bg-red-100 text-red-800';
     if (user.isAdmin) return 'bg-purple-100 text-purple-800';
@@ -184,6 +269,20 @@ const UserManagement = () => {
     if (!user.isActive) return 'Inactive';
     if (user.isAdmin) return 'Admin';
     return 'Active';
+  };
+
+  const getSeniorityLevel = (yearsOfService) => {
+    if (yearsOfService >= 15) return 'Senior';
+    if (yearsOfService >= 10) return 'Experienced';
+    if (yearsOfService >= 5) return 'Mid-level';
+    return 'Junior';
+  };
+
+  const getSeniorityColor = (yearsOfService) => {
+    if (yearsOfService >= 15) return 'text-purple-600 bg-purple-100';
+    if (yearsOfService >= 10) return 'text-blue-600 bg-blue-100';
+    if (yearsOfService >= 5) return 'text-green-600 bg-green-100';
+    return 'text-orange-600 bg-orange-100';
   };
 
   if (loading) {
@@ -252,6 +351,8 @@ const UserManagement = () => {
                 <option value="inactive">Inactive</option>
                 <option value="admin">Admins</option>
                 <option value="pending">Pending</option>
+                <option value="senior">Senior (10+ years)</option>
+                <option value="junior">Junior (&lt;5 years)</option>
               </select>
             </div>
           </div>
@@ -276,14 +377,42 @@ const UserManagement = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center">
+                      User
+                      {sortBy === 'name' && (
+                        <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Position
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('rank')}
+                  >
+                    <div className="flex items-center">
+                      Position
+                      {sortBy === 'rank' && (
+                        <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('seniority')}
+                  >
+                    <div className="flex items-center">
+                      <TrendingUp className="w-4 h-4 mr-1" />
+                      Seniority
+                      {sortBy === 'seniority' && (
+                        <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -321,6 +450,20 @@ const UserManagement = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{user.rank}</div>
                       <div className="text-sm text-gray-500">{user.position}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <div className="text-sm font-medium text-gray-900">
+                          {calculateSeniorityScore(user)}
+                        </div>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSeniorityColor(user.yearsOfService || 0)}`}>
+                          {getSeniorityLevel(user.yearsOfService || 0)}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500 flex items-center">
+                        <Calendar className="w-3 h-3 mr-1" />
+                        {user.yearsOfService || 0} years
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(user)}`}>
@@ -499,6 +642,26 @@ const UserManagement = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Years of Service
+                </label>
+                <input
+                  type="number"
+                  {...register('yearsOfService', { 
+                    min: { value: 0, message: 'Years must be 0 or greater' },
+                    max: { value: 50, message: 'Years cannot exceed 50' }
+                  })}
+                  className="input"
+                  min="0"
+                  max="50"
+                  placeholder="0"
+                />
+                {errors.yearsOfService && (
+                  <p className="mt-1 text-sm text-red-600">{errors.yearsOfService.message}</p>
+                )}
+              </div>
+
               <div className="flex items-center space-x-4">
                 <label className="flex items-center">
                   <input
@@ -667,11 +830,17 @@ const UserManagement = () => {
                 </label>
                 <input
                   type="number"
-                  {...registerEdit('yearsOfService', { min: 0, max: 50 })}
+                  {...registerEdit('yearsOfService', { 
+                    min: { value: 0, message: 'Years must be 0 or greater' },
+                    max: { value: 50, message: 'Years cannot exceed 50' }
+                  })}
                   className="input"
                   min="0"
                   max="50"
                 />
+                {editErrors.yearsOfService && (
+                  <p className="mt-1 text-sm text-red-600">{editErrors.yearsOfService.message}</p>
+                )}
               </div>
 
               <div className="flex items-center space-x-4">
@@ -767,6 +936,17 @@ const UserManagement = () => {
                 <div className="flex items-center text-sm">
                   <Clock className="w-4 h-4 text-gray-400 mr-2" />
                   <span className="text-gray-600">{selectedUser.yearsOfService || 0} years of service</span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <TrendingUp className="w-4 h-4 text-gray-400 mr-2" />
+                  <span className="text-gray-600">
+                    Seniority Score: {calculateSeniorityScore(selectedUser)}
+                  </span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSeniorityColor(selectedUser.yearsOfService || 0)}`}>
+                    {getSeniorityLevel(selectedUser.yearsOfService || 0)} Level
+                  </span>
                 </div>
                 <div className="flex items-center text-sm">
                   <Building2 className="w-4 h-4 text-gray-400 mr-2" />

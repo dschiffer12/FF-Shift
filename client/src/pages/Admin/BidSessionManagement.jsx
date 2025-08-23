@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
-import api from '../../services/api';
+import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const BidSessionManagement = () => {
@@ -52,7 +52,7 @@ const BidSessionManagement = () => {
   const fetchBidSessions = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/bid-sessions');
+      const response = await api.get(endpoints.bidSessions.list);
       setBidSessions(response.data.sessions || []);
     } catch (error) {
       console.error('Error fetching bid sessions:', error);
@@ -107,8 +107,6 @@ const BidSessionManagement = () => {
 
   const handleCreateSession = async (data) => {
     try {
-      console.log('Creating session with data:', data);
-      
       // Add default settings
       const sessionData = {
         ...data,
@@ -122,11 +120,8 @@ const BidSessionManagement = () => {
           maxBidAttempts: 3
         }
       };
-
-      console.log('Session data being sent:', sessionData);
       
-      const response = await api.post('/api/bid-sessions', sessionData);
-      console.log('Create response:', response.data);
+      const response = await api.post(endpoints.bidSessions.list, sessionData);
       
       setBidSessions([...bidSessions, response.data.bidSession]);
       setIsCreating(false);
@@ -141,7 +136,7 @@ const BidSessionManagement = () => {
 
   const handleUpdateSession = async (data) => {
     try {
-      const response = await api.put(`/api/bid-sessions/${selectedSession._id}`, data);
+      const response = await api.put(endpoints.bidSessions.detail(selectedSession._id), data);
       setBidSessions(bidSessions.map(session => 
         session._id === selectedSession._id ? response.data.bidSession : session
       ));
@@ -161,7 +156,7 @@ const BidSessionManagement = () => {
     }
 
     try {
-      await api.delete(`/api/bid-sessions/${sessionId}`);
+      await api.delete(endpoints.bidSessions.detail(sessionId));
       setBidSessions(bidSessions.filter(session => session._id !== sessionId));
       toast.success('Bid session deleted successfully');
     } catch (error) {
@@ -172,7 +167,7 @@ const BidSessionManagement = () => {
 
   const handleStartSession = async (sessionId) => {
     try {
-      await api.post(`/api/bid-sessions/${sessionId}/start`);
+      await api.post(endpoints.bidSessions.start(sessionId));
       await fetchBidSessions(); // Refresh the list
       toast.success('Bid session started successfully');
     } catch (error) {
@@ -183,7 +178,7 @@ const BidSessionManagement = () => {
 
   const handlePauseSession = async (sessionId) => {
     try {
-      await api.post(`/api/bid-sessions/${sessionId}/pause`);
+      await api.post(endpoints.bidSessions.pause(sessionId));
       await fetchBidSessions(); // Refresh the list
       toast.success('Bid session paused successfully');
     } catch (error) {
@@ -194,7 +189,7 @@ const BidSessionManagement = () => {
 
   const handleResumeSession = async (sessionId) => {
     try {
-      await api.post(`/api/bid-sessions/${sessionId}/resume`);
+      await api.post(endpoints.bidSessions.resume(sessionId));
       await fetchBidSessions(); // Refresh the list
       toast.success('Bid session resumed successfully');
     } catch (error) {

@@ -10,7 +10,6 @@ import {
   Lock, 
   User, 
   Badge, 
-  Building, 
   Calendar,
   MapPin,
   Award,

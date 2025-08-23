@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
-import api from '../../services/api';
+import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const Bidding = () => {
@@ -45,7 +45,7 @@ const Bidding = () => {
   const fetchActiveSessions = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/bid-sessions/active');
+      const response = await api.get(endpoints.bidSessions.current);
       setActiveSessions(response.data.sessions || []);
     } catch (error) {
       console.error('Error fetching active sessions:', error);
@@ -58,7 +58,7 @@ const Bidding = () => {
   const fetchMyBids = async () => {
     try {
       setBidsLoading(true);
-      const response = await api.get('/api/users/bid-history');
+      const response = await api.get(endpoints.users.bidHistory);
       setMyBids(response.data.bidHistory || []);
     } catch (error) {
       console.error('Error fetching my bids:', error);
@@ -67,31 +67,20 @@ const Bidding = () => {
     }
   };
 
-  const handleJoinSession = async (sessionId) => {
-    try {
-      await api.post(`/api/bid-sessions/${sessionId}/join`);
-      toast.success('Successfully joined bid session!');
-      fetchActiveSessions();
-    } catch (error) {
-      console.error('Error joining session:', error);
-      toast.error(error.response?.data?.error || 'Failed to join session');
-    }
-  };
-
   const handleSubmitBid = async () => {
     if (!selectedSession) return;
 
-    try {
-      await api.post(`/api/bid-sessions/${selectedSession._id}/submit-bid`, bidData);
-      toast.success('Bid submitted successfully!');
-      setShowBidModal(false);
-      setSelectedSession(null);
-      setBidData({ station: '', shift: '', position: '' });
-      fetchMyBids();
-    } catch (error) {
-      console.error('Error submitting bid:', error);
-      toast.error(error.response?.data?.error || 'Failed to submit bid');
-    }
+    // TODO: Implement Socket.IO bidding instead of HTTP API
+    // Bidding should be handled through Socket.IO events, not HTTP API calls
+    toast.error('Bidding functionality not implemented yet');
+    
+    // Example of how it should work:
+    // socket.emit('submit_bid', {
+    //   sessionId: selectedSession._id,
+    //   stationId: bidData.station,
+    //   shift: bidData.shift,
+    //   position: bidData.position
+    // });
   };
 
   const formatDate = (dateString) => {

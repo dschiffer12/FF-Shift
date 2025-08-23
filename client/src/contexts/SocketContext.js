@@ -20,11 +20,6 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (!user || !token) {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-        setIsConnected(false);
-      }
       return;
     }
 
@@ -122,6 +117,17 @@ export const SocketProvider = ({ children }) => {
       newSocket.disconnect();
     };
   }, [user, token]);
+
+  // Cleanup socket when user/token is removed
+  useEffect(() => {
+    if (!user || !token) {
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+        setIsConnected(false);
+      }
+    }
+  }, [user, token, socket]);
 
   // Join bid session room
   const joinBidSession = (sessionId) => {

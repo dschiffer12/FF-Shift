@@ -17,7 +17,6 @@ import {
   CheckCircle,
   AlertCircle,
   Calendar,
-  Target,
   Settings,
   BarChart3,
   Play,
@@ -28,7 +27,7 @@ import {
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
-import api from '../../services/api';
+import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 import BidPreferences from './BidPreferences';
 
@@ -84,6 +83,51 @@ const Profile = () => {
 
   const newPassword = watchPassword('newPassword');
 
+  // Calculate seniority score for display
+  const calculateSeniorityScore = (user) => {
+    if (!user) return 0;
+    
+    let score = (user.yearsOfService || 0) * 10;
+    
+    const rankMultipliers = {
+      'Firefighter': 1,
+      'Engineer': 1.2,
+      'Lieutenant': 1.5,
+      'Captain': 2,
+      'Battalion Chief': 3,
+      'Deputy Chief': 4,
+      'Chief': 5
+    };
+    
+    const positionMultipliers = {
+      'Firefighter': 1,
+      'Paramedic': 1.3,
+      'EMT': 1.1,
+      'Driver': 1.2,
+      'Operator': 1.4,
+      'Officer': 1.5
+    };
+    
+    score *= (rankMultipliers[user.rank] || 1);
+    score *= (positionMultipliers[user.position] || 1);
+    
+    return Math.round(score);
+  };
+
+  const getSeniorityLevel = (yearsOfService) => {
+    if (yearsOfService >= 15) return 'Senior';
+    if (yearsOfService >= 10) return 'Experienced';
+    if (yearsOfService >= 5) return 'Mid-level';
+    return 'Junior';
+  };
+
+  const getSeniorityColor = (yearsOfService) => {
+    if (yearsOfService >= 15) return 'text-purple-600 bg-purple-100';
+    if (yearsOfService >= 10) return 'text-blue-600 bg-blue-100';
+    if (yearsOfService >= 5) return 'text-green-600 bg-green-100';
+    return 'text-orange-600 bg-orange-100';
+  };
+
   useEffect(() => {
     if (user) {
       reset({
@@ -115,7 +159,7 @@ const Profile = () => {
   const fetchBidSessions = async () => {
     try {
       setSessionsLoading(true);
-      const response = await api.get('/api/bid-sessions/active');
+      const response = await api.get(endpoints.bidSessions.current);
       setCurrentSessions(response.data.sessions || []);
     } catch (error) {
       console.error('Error fetching bid sessions:', error);
@@ -458,12 +502,18 @@ const Profile = () => {
                   </label>
                   <input
                     type="number"
-                    {...register('yearsOfService', { min: 0, max: 50 })}
+                    {...register('yearsOfService', { 
+                      min: { value: 0, message: 'Years must be 0 or greater' },
+                      max: { value: 50, message: 'Years cannot exceed 50' }
+                    })}
                     disabled={!isEditing}
                     className={`input ${errors.yearsOfService ? 'input-error' : ''} ${!isEditing ? 'bg-gray-50' : ''}`}
                     min="0"
                     max="50"
                   />
+                  {errors.yearsOfService && (
+                    <p className="mt-1 text-sm text-red-600">{errors.yearsOfService.message}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -693,6 +743,18 @@ const Profile = () => {
                     </span>
                   </div>
                   <div className="flex items-center text-sm">
+                    <TrendingUp className="w-4 h-4 text-gray-400 mr-2" />
+                    <span className="text-gray-600">Seniority Score:</span>
+                    <span className="ml-auto font-medium text-gray-900">
+                      {calculateSeniorityScore(user)}
+                    </span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSeniorityColor(user.yearsOfService || 0)}`}>
+                      {getSeniorityLevel(user.yearsOfService || 0)} Level
+                    </span>
+                  </div>
+                  <div className="flex items-center text-sm">
                     <Award className="w-4 h-4 text-gray-400 mr-2" />
                     <span className="text-gray-600">Bid Priority:</span>
                     <span className="ml-auto font-medium text-gray-900">
@@ -701,9 +763,9 @@ const Profile = () => {
                   </div>
                   <div className="flex items-center text-sm">
                     <Star className="w-4 h-4 text-gray-400 mr-2" />
-                    <span className="text-gray-600">Seniority:</span>
+                    <span className="text-gray-600">Position:</span>
                     <span className="ml-auto font-medium text-gray-900">
-                      {user.seniority || 'N/A'}
+                      {user.position || 'N/A'}
                     </span>
                   </div>
                 </div>

@@ -105,6 +105,7 @@ export const endpoints = {
   // Bid Sessions
   bidSessions: {
     list: '/api/bid-sessions',
+    current: '/api/bid-sessions/current',
     detail: (id) => `/api/bid-sessions/${id}`,
     participants: (id) => `/api/bid-sessions/${id}/participants`,
     start: (id) => `/api/bid-sessions/${id}/start`,

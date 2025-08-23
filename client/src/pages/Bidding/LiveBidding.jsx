@@ -4,20 +4,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { 
   Target, 
-  Clock, 
   Building2, 
   Users, 
-  Award, 
-  AlertCircle, 
   CheckCircle, 
   Play, 
-  Pause, 
-  Calendar,
   BarChart3,
   Settings,
   RefreshCw,
-  Bell,
-  Star,
   Timer,
   User,
   X,
@@ -26,7 +19,7 @@ import {
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
-import api from '../../services/api';
+import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const LiveBidding = () => {
@@ -60,6 +53,7 @@ const LiveBidding = () => {
         clearInterval(timerRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   useEffect(() => {
@@ -85,7 +79,7 @@ const LiveBidding = () => {
   const fetchSessionData = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/bid-sessions/${sessionId}`);
+      const response = await api.get(endpoints.bidSessions.detail(sessionId));
       setSession(response.data.bidSession);
       setParticipants(response.data.participants || []);
       setCurrentParticipant(response.data.currentParticipant);
@@ -164,28 +158,26 @@ const LiveBidding = () => {
       return;
     }
 
-    try {
-      await api.post(`/api/bid-sessions/${sessionId}/submit-bid`, bidData);
-      setShowBidForm(false);
-      setMyTurn(false);
-      setBidData({ station: '', shift: '', position: '' });
-      toast.success('Bid submitted successfully!');
-    } catch (error) {
-      console.error('Error submitting bid:', error);
-      toast.error(error.response?.data?.error || 'Failed to submit bid');
-    }
+    // TODO: Implement Socket.IO bidding instead of HTTP API
+    // Bidding should be handled through Socket.IO events, not HTTP API calls
+    toast.error('Bidding functionality not implemented yet');
+    
+    // Example of how it should work:
+    // socket.emit('submit_bid', {
+    //   sessionId: sessionId,
+    //   stationId: bidData.station,
+    //   shift: bidData.shift,
+    //   position: bidData.position
+    // });
   };
 
   const handleSkipTurn = async () => {
-    try {
-      await api.post(`/api/bid-sessions/${sessionId}/skip-turn`);
-      setShowBidForm(false);
-      setMyTurn(false);
-      toast.info('Turn skipped');
-    } catch (error) {
-      console.error('Error skipping turn:', error);
-      toast.error('Failed to skip turn');
-    }
+    // TODO: Implement Socket.IO skip turn instead of HTTP API
+    // Skip turn should be handled through Socket.IO events, not HTTP API calls
+    toast.error('Skip turn functionality not implemented yet');
+    
+    // Example of how it should work:
+    // socket.emit('skip_turn', { sessionId: sessionId });
   };
 
   const formatTime = (seconds) => {

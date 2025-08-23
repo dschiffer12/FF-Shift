@@ -1,15 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
-  Settings, 
   Save, 
   X, 
   Bell, 
   Target, 
   Clock, 
-  Building2, 
-  CheckCircle,
-  AlertCircle
+  Building2
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -19,28 +16,22 @@ import toast from 'react-hot-toast';
 const BidPreferences = ({ onClose }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [preferences, setPreferences] = useState({});
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isDirty },
+    formState: { isDirty },
     reset,
     watch
   } = useForm();
 
   const autoBidEnabled = watch('autoBid');
 
-  useEffect(() => {
-    fetchPreferences();
-  }, []);
-
-  const fetchPreferences = async () => {
+  const fetchPreferences = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get('/api/users/preferences');
       const prefs = response.data.preferences || {};
-      setPreferences(prefs);
       reset({
         preferredShifts: prefs.preferredShifts || [],
         preferredStations: prefs.preferredStations || [],
@@ -59,13 +50,16 @@ const BidPreferences = ({ onClose }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [reset]);
+
+  useEffect(() => {
+    fetchPreferences();
+  }, [fetchPreferences]);
 
   const onSubmit = async (data) => {
     try {
       setSaving(true);
-      const response = await api.put('/api/users/preferences', data);
-      setPreferences(response.data.preferences);
+      await api.put('/api/users/preferences', data);
       toast.success('Preferences updated successfully!');
       onClose();
     } catch (error) {
