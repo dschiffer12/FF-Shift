@@ -64,23 +64,6 @@ export const SocketProvider = ({ children }) => {
       }
     });
 
-    // Bid session events
-    newSocket.on('bid-session-started', (data) => {
-      toast.success(`Bid session "${data.sessionName}" has started!`);
-    });
-
-    newSocket.on('bid-session-paused', (data) => {
-      toast.info(`Bid session "${data.sessionName}" has been paused`);
-    });
-
-    newSocket.on('bid-session-resumed', (data) => {
-      toast.success(`Bid session "${data.sessionName}" has resumed`);
-    });
-
-    newSocket.on('bid-session-completed', (data) => {
-      toast.success(`Bid session "${data.sessionName}" has completed!`);
-    });
-
     // New bid session notification
     newSocket.on('new-bid-session', (data) => {
       toast.success(`New bid session "${data.sessionName}" has been created!`, {
@@ -88,14 +71,66 @@ export const SocketProvider = ({ children }) => {
         action: {
           label: 'View',
           onClick: () => {
-            // Navigate to bidding page
+            // Navigate to bidding page and refresh to get latest sessions
             window.location.href = '/bidding';
           }
         }
       });
       
-      // Automatically join the bid session room
-      newSocket.emit('join-bid-session', { sessionId: data.sessionId });
+      // Only join the bid session room if we have a valid sessionId
+      if (data.sessionId) {
+        newSocket.emit('join-bid-session', { sessionId: data.sessionId });
+      }
+    });
+
+    // Bid session started notification
+    newSocket.on('bid-session-started', (data) => {
+      toast.success(`Bid session "${data.sessionName}" has started!`, {
+        duration: 6000,
+        action: {
+          label: 'Join Session',
+          onClick: () => {
+            // Navigate to bidding page to see the active session
+            window.location.href = '/bidding';
+          }
+        }
+      });
+    });
+
+    newSocket.on('bid-session-paused', (data) => {
+      toast.info(`Bid session "${data.sessionName}" has been paused`, {
+        duration: 4000,
+        action: {
+          label: 'View',
+          onClick: () => {
+            window.location.href = '/bidding';
+          }
+        }
+      });
+    });
+
+    newSocket.on('bid-session-resumed', (data) => {
+      toast.success(`Bid session "${data.sessionName}" has resumed`, {
+        duration: 4000,
+        action: {
+          label: 'Join Session',
+          onClick: () => {
+            window.location.href = '/bidding';
+          }
+        }
+      });
+    });
+
+    newSocket.on('bid-session-completed', (data) => {
+      toast.success(`Bid session "${data.sessionName}" has completed!`, {
+        duration: 6000,
+        action: {
+          label: 'View Results',
+          onClick: () => {
+            window.location.href = '/bidding';
+          }
+        }
+      });
     });
 
     // Admin notification for session creation
@@ -174,7 +209,24 @@ export const SocketProvider = ({ children }) => {
             }
           }
         });
+      } else {
+        // Notify other users that someone's turn has started
+        toast.info(`${data.userName}'s turn has started`, {
+          duration: 4000,
+          action: {
+            label: 'Watch Session',
+            onClick: () => {
+              window.location.href = '/bidding';
+            }
+          }
+        });
       }
+    });
+
+    // Turn updated event
+    newSocket.on('turn-updated', (data) => {
+      // This will be handled by the bidding components to refresh their data
+      console.log('Turn updated:', data);
     });
 
     // Bid events

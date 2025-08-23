@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Clock, 
   User, 
   Users, 
   AlertTriangle, 
@@ -39,8 +38,8 @@ const TurnDisplay = ({ session, currentUser }) => {
 
   const currentParticipant = session.participants?.find(p => p.position === session.currentParticipant);
   const nextParticipant = session.participants?.find(p => p.position === session.currentParticipant + 1);
-  const isCurrentUserTurn = currentParticipant?.user?._id === currentUser?._id;
-  const isNextUserTurn = nextParticipant?.user?._id === currentUser?._id;
+  const isCurrentUserTurn = currentParticipant?.user?.id === currentUser?._id || currentParticipant?.user?._id === currentUser?._id;
+  const isNextUserTurn = nextParticipant?.user?.id === currentUser?._id || nextParticipant?.user?._id === currentUser?._id;
 
   const formatTime = (milliseconds) => {
     if (milliseconds <= 0) return '00:00';

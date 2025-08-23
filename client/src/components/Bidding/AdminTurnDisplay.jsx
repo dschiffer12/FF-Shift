@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Clock, 
   User, 
   Users, 
   AlertTriangle, 
-  CheckCircle, 
   Play,
   Pause,
   Timer,
   SkipForward,
   RotateCcw,
-  Settings,
   Eye
 } from 'lucide-react';
 import Button from '../UI/Button';
@@ -69,13 +66,15 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
 
   const handleSkipTurn = () => {
     if (onSkipTurn && currentParticipant) {
-      onSkipTurn(session._id, currentParticipant.user._id);
+      const userId = currentParticipant.user.id || currentParticipant.user._id;
+      onSkipTurn(session.id, userId);
     }
   };
 
   const handleAutoAssign = () => {
     if (onAutoAssign && currentParticipant) {
-      onAutoAssign(session._id, currentParticipant.user._id);
+      const userId = currentParticipant.user.id || currentParticipant.user._id;
+      onAutoAssign(session.id, userId);
     }
   };
 
@@ -159,27 +158,27 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
                 </Button>
               </div>
               <div className="flex items-center space-x-2">
-                {session.status === 'active' ? (
-                  <Button
-                    onClick={() => onPauseSession?.(session._id)}
-                    variant="secondary"
-                    size="sm"
-                    className="text-yellow-600 hover:text-yellow-800"
-                  >
-                    <Pause className="w-4 h-4 mr-1" />
-                    Pause
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => onResumeSession?.(session._id)}
-                    variant="secondary"
-                    size="sm"
-                    className="text-green-600 hover:text-green-800"
-                  >
-                    <Play className="w-4 h-4 mr-1" />
-                    Resume
-                  </Button>
-                )}
+                                 {session.status === 'active' ? (
+                   <Button
+                     onClick={() => onPauseSession?.(session.id)}
+                     variant="secondary"
+                     size="sm"
+                     className="text-yellow-600 hover:text-yellow-800"
+                   >
+                     <Pause className="w-4 h-4 mr-1" />
+                     Pause
+                   </Button>
+                 ) : (
+                   <Button
+                     onClick={() => onResumeSession?.(session.id)}
+                     variant="secondary"
+                     size="sm"
+                     className="text-green-600 hover:text-green-800"
+                   >
+                     <Play className="w-4 h-4 mr-1" />
+                     Resume
+                   </Button>
+                 )}
               </div>
             </div>
           </div>
@@ -225,8 +224,8 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
             Upcoming (Next 3)
           </h4>
           <div className="space-y-2">
-            {upcomingParticipants.map((participant, index) => (
-              <div key={participant.user._id} className="p-2 rounded-lg border border-gray-200 bg-gray-50">
+                         {upcomingParticipants.map((participant, index) => (
+               <div key={participant.user.id || participant.user._id} className="p-2 rounded-lg border border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className="w-6 h-6 rounded-full flex items-center justify-center bg-gray-100">

@@ -9,14 +9,10 @@ import {
   Eye, 
   Play, 
   Pause, 
-  Users, 
-  Clock, 
   Plus,
   Save,
   X,
-  RefreshCw,
-  Settings,
-  BarChart3
+  RefreshCw
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -148,9 +144,9 @@ const BidSessionManagement = () => {
 
   const handleUpdateSession = async (data) => {
     try {
-      const response = await api.put(endpoints.bidSessions.update(selectedSession._id), data);
+      const response = await api.put(endpoints.bidSessions.update(selectedSession.id), data);
       setBidSessions(bidSessions.map(session => 
-        session._id === selectedSession._id ? response.data.session : session
+        session.id === selectedSession.id ? response.data.session : session
       ));
       setIsEditing(false);
       setSelectedSession(null);
@@ -429,7 +425,7 @@ const BidSessionManagement = () => {
       {/* Bid Sessions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredSessions.map((session) => (
-          <div key={session._id} className="card hover:shadow-md transition-shadow">
+          <div key={session.id} className="card hover:shadow-md transition-shadow">
             <div className="card-header">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-gray-900 truncate">{session.name}</h3>
@@ -502,7 +498,7 @@ const BidSessionManagement = () => {
                 <div className="flex items-center space-x-2">
                   {session.status === 'draft' && (
                     <Button
-                      onClick={() => handleStartSession(session._id)}
+                      onClick={() => handleStartSession(session.id)}
                       variant="primary"
                       size="sm"
                     >
@@ -512,7 +508,7 @@ const BidSessionManagement = () => {
                   )}
                   {session.status === 'active' && (
                     <Button
-                      onClick={() => handlePauseSession(session._id)}
+                      onClick={() => handlePauseSession(session.id)}
                       variant="secondary"
                       size="sm"
                     >
@@ -522,7 +518,7 @@ const BidSessionManagement = () => {
                   )}
                   {session.status === 'paused' && (
                     <Button
-                      onClick={() => handleResumeSession(session._id)}
+                      onClick={() => handleResumeSession(session.id)}
                       variant="primary"
                       size="sm"
                     >
@@ -990,8 +986,8 @@ const BidSessionManagement = () => {
                   <h5 className="font-medium text-gray-900 mb-2">Participants</h5>
                   <div className="max-h-60 overflow-y-auto border rounded-lg p-4">
                     <div className="space-y-2">
-                      {selectedSession.participants.map((participant, index) => (
-                        <div key={participant.user._id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                           {selectedSession.participants.map((participant, index) => (
+                       <div key={participant.user.id || participant.user._id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                           <div>
                             <span className="font-medium">{index + 1}.</span>
                             <span className="ml-2">{participant.user.firstName} {participant.user.lastName}</span>
