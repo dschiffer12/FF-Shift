@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import AdminTurnDisplay from '../../components/Bidding/AdminTurnDisplay';
 import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -35,7 +36,9 @@ const BidSessionManagement = () => {
   const [showSessionDetails, setShowSessionDetails] = useState(false);
   const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [showUserSelection, setShowUserSelection] = useState(false);
+  const [currentActiveSession, setCurrentActiveSession] = useState(null);
 
   const {
     register,
@@ -56,7 +59,12 @@ const BidSessionManagement = () => {
     try {
       setLoading(true);
       const response = await api.get(endpoints.bidSessions.list);
-      setBidSessions(response.data.sessions || []);
+      const sessions = response.data.sessions || [];
+      setBidSessions(sessions);
+      
+      // Find the currently active session
+      const activeSession = sessions.find(s => s.status === 'active');
+      setCurrentActiveSession(activeSession);
     } catch (error) {
       console.error('Error fetching bid sessions:', error);
       toast.error('Failed to load bid sessions');
@@ -121,40 +129,28 @@ const BidSessionManagement = () => {
 
   const handleCreateSession = async (data) => {
     try {
-      // Add default settings
       const sessionData = {
         ...data,
-        year: parseInt(data.year),
-        bidWindowDuration: parseInt(data.bidWindowDuration),
-        autoAssignTimeout: parseInt(data.autoAssignTimeout),
-        participantIds: selectedUsers.map(user => user._id),
-        settings: {
-          allowMultipleBids: false,
-          requirePositionMatch: true,
-          allowCrossShiftBidding: false,
-          maxBidAttempts: 3
-        }
+        participantIds: selectedUsers.map(user => user._id)
       };
-      
-      const response = await api.post(endpoints.bidSessions.list, sessionData);
-      
-      setBidSessions([...bidSessions, response.data.bidSession]);
+
+      const response = await api.post(endpoints.bidSessions.create, sessionData);
+      setBidSessions([...bidSessions, response.data.session]);
       setIsCreating(false);
       setSelectedUsers([]);
       reset();
       toast.success('Bid session created successfully');
     } catch (error) {
       console.error('Error creating bid session:', error);
-      console.error('Error response:', error.response?.data);
       toast.error(error.response?.data?.error || 'Failed to create bid session');
     }
   };
 
   const handleUpdateSession = async (data) => {
     try {
-      const response = await api.put(endpoints.bidSessions.detail(selectedSession.id), data);
+      const response = await api.put(endpoints.bidSessions.update(selectedSession._id), data);
       setBidSessions(bidSessions.map(session => 
-        session.id === selectedSession.id ? response.data.bidSession : session
+        session._id === selectedSession._id ? response.data.session : session
       ));
       setIsEditing(false);
       setSelectedSession(null);
@@ -172,8 +168,8 @@ const BidSessionManagement = () => {
     }
 
     try {
-      await api.delete(endpoints.bidSessions.detail(sessionId));
-      setBidSessions(bidSessions.filter(session => session.id !== sessionId));
+      await api.delete(endpoints.bidSessions.delete(sessionId));
+      setBidSessions(bidSessions.filter(session => session._id !== sessionId));
       toast.success('Bid session deleted successfully');
     } catch (error) {
       console.error('Error deleting bid session:', error);
@@ -211,6 +207,28 @@ const BidSessionManagement = () => {
     } catch (error) {
       console.error('Error resuming bid session:', error);
       toast.error(error.response?.data?.error || 'Failed to resume bid session');
+    }
+  };
+
+  const handleSkipTurn = async (sessionId, userId) => {
+    try {
+      await api.post(`/api/bid-sessions/${sessionId}/skip-turn`, { userId });
+      await fetchBidSessions(); // Refresh the list
+      toast.success('Turn skipped successfully');
+    } catch (error) {
+      console.error('Error skipping turn:', error);
+      toast.error(error.response?.data?.error || 'Failed to skip turn');
+    }
+  };
+
+  const handleAutoAssign = async (sessionId, userId) => {
+    try {
+      await api.post(`/api/bid-sessions/${sessionId}/auto-assign`, { userId });
+      await fetchBidSessions(); // Refresh the list
+      toast.success('User auto-assigned successfully');
+    } catch (error) {
+      console.error('Error auto-assigning user:', error);
+      toast.error(error.response?.data?.error || 'Failed to auto-assign user');
     }
   };
 
@@ -362,6 +380,17 @@ const BidSessionManagement = () => {
         </div>
       </div>
 
+      {/* Active Session Turn Display */}
+      {currentActiveSession && (
+        <AdminTurnDisplay 
+          session={currentActiveSession}
+          onSkipTurn={handleSkipTurn}
+          onPauseSession={handlePauseSession}
+          onResumeSession={handleResumeSession}
+          onAutoAssign={handleAutoAssign}
+        />
+      )}
+
       {/* Search and Filters */}
       <div className="card">
         <div className="card-body">
@@ -400,50 +429,52 @@ const BidSessionManagement = () => {
       {/* Bid Sessions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredSessions.map((session) => (
-          <div key={session.id} className="card hover:shadow-lg transition-shadow">
+          <div key={session._id} className="card hover:shadow-md transition-shadow">
             <div className="card-header">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-primary-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">{session.name}</h3>
-                    <p className="text-sm text-gray-500">{session.description}</p>
-                  </div>
-                </div>
+                <h3 className="text-lg font-medium text-gray-900 truncate">{session.name}</h3>
                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(session)}`}>
                   {getStatusText(session)}
                 </span>
               </div>
             </div>
             <div className="card-body">
-              <div className="space-y-3">
-                <div className="flex items-center text-sm">
-                  <Clock className="w-4 h-4 text-gray-400 mr-2" />
-                  <span className="text-gray-600">
-                    {formatDate(session.scheduledStart)} - {formatDate(session.scheduledEnd)}
-                  </span>
+              <p className="text-sm text-gray-600 mb-4 line-clamp-2">{session.description}</p>
+              
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Year:</span>
+                  <span className="font-medium">{session.year}</span>
                 </div>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Participants:</span>
-                  <span className="font-medium">{session.participantCount || 0}</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Start Date:</span>
+                  <span className="font-medium">{formatDate(session.scheduledStart)}</span>
                 </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Bid Window Duration:</span>
-                  <span className="font-medium">{session.bidWindowDuration || 5} minutes</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">End Date:</span>
+                  <span className="font-medium">{formatDate(session.scheduledEnd)}</span>
                 </div>
-
-                <div className="flex items-center text-sm">
-                  <Settings className="w-4 h-4 text-gray-400 mr-2" />
-                  <span className="text-gray-600">
-                    Auto-assign Timeout: {session.autoAssignTimeout || 2} minutes
-                  </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Participants:</span>
+                  <span className="font-medium">{session.participants?.length || 0}</span>
                 </div>
-
-                <div className="flex items-center justify-end space-x-2 pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Bid Window:</span>
+                  <span className="font-medium">{session.bidWindowDuration} min</span>
+                </div>
+                {session.status === 'active' && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Progress:</span>
+                    <span className="font-medium">
+                      {session.completedBids || 0} / {session.participants?.length || 0}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="card-footer">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
                   <Button
                     onClick={() => handleViewSession(session)}
                     variant="ghost"
@@ -458,44 +489,47 @@ const BidSessionManagement = () => {
                   >
                     <Edit3 className="w-4 h-4" />
                   </Button>
-                  {(session.status === 'draft' || session.status === 'scheduled') && (
-                    <Button
-                      onClick={() => handleStartSession(session.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-green-600 hover:text-green-800"
-                    >
-                      <Play className="w-4 h-4" />
-                    </Button>
-                  )}
-                  {session.status === 'active' && (
-                    <Button
-                      onClick={() => handlePauseSession(session.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-orange-600 hover:text-orange-800"
-                    >
-                      <Pause className="w-4 h-4" />
-                    </Button>
-                  )}
-                  {session.status === 'paused' && (
-                    <Button
-                      onClick={() => handleResumeSession(session.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-green-600 hover:text-green-800"
-                    >
-                      <Play className="w-4 h-4" />
-                    </Button>
-                  )}
                   <Button
-                    onClick={() => handleDeleteSession(session.id)}
+                    onClick={() => handleDeleteSession(session._id)}
                     variant="ghost"
                     size="sm"
                     className="text-red-600 hover:text-red-800"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {session.status === 'draft' && (
+                    <Button
+                      onClick={() => handleStartSession(session._id)}
+                      variant="primary"
+                      size="sm"
+                    >
+                      <Play className="w-4 h-4 mr-1" />
+                      Start
+                    </Button>
+                  )}
+                  {session.status === 'active' && (
+                    <Button
+                      onClick={() => handlePauseSession(session._id)}
+                      variant="secondary"
+                      size="sm"
+                    >
+                      <Pause className="w-4 h-4 mr-1" />
+                      Pause
+                    </Button>
+                  )}
+                  {session.status === 'paused' && (
+                    <Button
+                      onClick={() => handleResumeSession(session._id)}
+                      variant="primary"
+                      size="sm"
+                    >
+                      <Play className="w-4 h-4 mr-1" />
+                      Resume
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -519,12 +553,13 @@ const BidSessionManagement = () => {
       {/* Create Session Modal */}
       {isCreating && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-[600px] shadow-lg rounded-md bg-white">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Create New Bid Session</h3>
               <Button
                 onClick={() => {
                   setIsCreating(false);
+                  setSelectedUsers([]);
                   reset();
                 }}
                 variant="ghost"
@@ -535,19 +570,39 @@ const BidSessionManagement = () => {
             </div>
             
             <form onSubmit={handleSubmit(handleCreateSession)} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Session Name
-                </label>
-                <input
-                  type="text"
-                  {...register('name', { required: 'Session name is required' })}
-                  className="input"
-                  placeholder="e.g., Annual 2024 Shift Bid"
-                />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Session Name
+                  </label>
+                  <input
+                    type="text"
+                    {...register('name', { required: 'Session name is required' })}
+                    className="input"
+                    placeholder="e.g., Annual 2024 Bid"
+                  />
+                  {errors.name && (
+                    <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Year
+                  </label>
+                  <input
+                    type="number"
+                    {...register('year', { 
+                      required: 'Year is required',
+                      min: { value: 2024, message: 'Year must be 2024 or later' }
+                    })}
+                    className="input"
+                    min="2024"
+                    defaultValue="2024"
+                  />
+                  {errors.year && (
+                    <p className="mt-1 text-sm text-red-600">{errors.year.message}</p>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -562,30 +617,14 @@ const BidSessionManagement = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Year
-                </label>
-                <input
-                  type="number"
-                  {...register('year', { required: 'Year is required', min: 2024 })}
-                  className="input"
-                  placeholder="2024"
-                  defaultValue="2024"
-                />
-                {errors.year && (
-                  <p className="mt-1 text-sm text-red-600">{errors.year.message}</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Scheduled Start
                   </label>
                   <input
                     type="datetime-local"
-                    {...register('scheduledStart', { required: 'Scheduled start is required' })}
+                    {...register('scheduledStart', { required: 'Start date is required' })}
                     className="input"
                   />
                   {errors.scheduledStart && (
@@ -598,7 +637,7 @@ const BidSessionManagement = () => {
                   </label>
                   <input
                     type="datetime-local"
-                    {...register('scheduledEnd', { required: 'Scheduled end is required' })}
+                    {...register('scheduledEnd', { required: 'End date is required' })}
                     className="input"
                   />
                   {errors.scheduledEnd && (
@@ -607,16 +646,21 @@ const BidSessionManagement = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Bid Window Duration (minutes)
                   </label>
                   <input
                     type="number"
-                    {...register('bidWindowDuration', { required: 'Bid window duration is required', min: 1, max: 60 })}
+                    {...register('bidWindowDuration', { 
+                      required: 'Bid window duration is required',
+                      min: { value: 1, message: 'Minimum 1 minute' },
+                      max: { value: 60, message: 'Maximum 60 minutes' }
+                    })}
                     className="input"
-                    placeholder="5"
+                    min="1"
+                    max="60"
                     defaultValue="5"
                   />
                   {errors.bidWindowDuration && (
@@ -625,13 +669,18 @@ const BidSessionManagement = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Auto Assign Timeout (minutes)
+                    Auto-Assign Timeout (minutes)
                   </label>
                   <input
                     type="number"
-                    {...register('autoAssignTimeout', { required: 'Auto assign timeout is required', min: 1, max: 30 })}
+                    {...register('autoAssignTimeout', { 
+                      required: 'Auto-assign timeout is required',
+                      min: { value: 1, message: 'Minimum 1 minute' },
+                      max: { value: 30, message: 'Maximum 30 minutes' }
+                    })}
                     className="input"
-                    placeholder="2"
+                    min="1"
+                    max="30"
                     defaultValue="2"
                   />
                   {errors.autoAssignTimeout && (
@@ -642,18 +691,16 @@ const BidSessionManagement = () => {
 
               {/* User Selection Section */}
               <div className="border-t pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Select Participants ({selectedUsers.length} selected)
-                  </label>
-                  <div className="flex space-x-2">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-md font-medium text-gray-900">Select Participants</h4>
+                  <div className="flex items-center space-x-2">
                     <Button
                       type="button"
                       variant="secondary"
                       size="sm"
                       onClick={handleSelectAllUsers}
                     >
-                      Select All Active
+                      Select All
                     </Button>
                     <Button
                       type="button"
@@ -666,55 +713,40 @@ const BidSessionManagement = () => {
                   </div>
                 </div>
                 
-                <div className="max-h-48 overflow-y-auto border rounded-lg p-2">
-                  {users.length > 0 ? (
-                    users
-                      .filter(user => user.isActive)
-                      .sort((a, b) => calculateSeniorityScore(b) - calculateSeniorityScore(a))
-                      .map((user) => {
-                        const isSelected = selectedUsers.find(u => u._id === user._id);
-                        return (
-                          <div
-                            key={user._id}
-                            className={`flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-50 ${
-                              isSelected ? 'bg-blue-50 border border-blue-200' : ''
-                            }`}
-                            onClick={() => handleUserToggle(user)}
-                          >
-                            <div className="flex items-center space-x-3">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => handleUserToggle(user)}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              />
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">
-                                  {user.firstName} {user.lastName}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {user.rank} • {user.position} • ID: {user.employeeId}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              Score: {calculateSeniorityScore(user)}
-                            </div>
+                <div className="max-h-60 overflow-y-auto border rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {users.filter(user => user.isActive).map((user) => {
+                      const isSelected = selectedUsers.find(u => u._id === user._id);
+                      return (
+                        <div
+                          key={user._id}
+                          className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer border ${
+                            isSelected ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
+                          }`}
+                          onClick={() => handleUserToggle(user)}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleUserToggle(user)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {user.firstName} {user.lastName}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {user.rank} - Priority: {calculateSeniorityScore(user)}
+                            </p>
                           </div>
-                        );
-                      })
-                  ) : (
-                    <div className="text-center py-4 text-gray-500">
-                      <Users className="w-8 h-8 mx-auto mb-2" />
-                      <p>No users available</p>
-                    </div>
-                  )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                {selectedUsers.length === 0 && (
-                  <p className="text-xs text-orange-600 mt-1">
-                    ⚠️ No participants selected. The session will be created without participants.
-                  </p>
-                )}
+                <p className="mt-2 text-sm text-gray-600">
+                  Selected: {selectedUsers.length} users
+                </p>
               </div>
 
               <div className="flex items-center justify-end space-x-3 pt-4">
@@ -732,6 +764,7 @@ const BidSessionManagement = () => {
                 <Button
                   type="submit"
                   variant="primary"
+                  disabled={selectedUsers.length === 0}
                 >
                   <Save className="w-4 h-4 mr-2" />
                   Create Session
@@ -745,7 +778,7 @@ const BidSessionManagement = () => {
       {/* Edit Session Modal */}
       {isEditing && selectedSession && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Bid Session</h3>
               <Button
@@ -787,21 +820,6 @@ const BidSessionManagement = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Year
-                </label>
-                <input
-                  type="number"
-                  {...registerEdit('year', { required: 'Year is required', min: 2024 })}
-                  className="input"
-                  placeholder="2024"
-                />
-                {editErrors.year && (
-                  <p className="mt-1 text-sm text-red-600">{editErrors.year.message}</p>
-                )}
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -809,7 +827,7 @@ const BidSessionManagement = () => {
                   </label>
                   <input
                     type="datetime-local"
-                    {...registerEdit('scheduledStart', { required: 'Scheduled start is required' })}
+                    {...registerEdit('scheduledStart', { required: 'Start date is required' })}
                     className="input"
                   />
                   {editErrors.scheduledStart && (
@@ -822,7 +840,7 @@ const BidSessionManagement = () => {
                   </label>
                   <input
                     type="datetime-local"
-                    {...registerEdit('scheduledEnd', { required: 'Scheduled end is required' })}
+                    {...registerEdit('scheduledEnd', { required: 'End date is required' })}
                     className="input"
                   />
                   {editErrors.scheduledEnd && (
@@ -831,16 +849,38 @@ const BidSessionManagement = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Bid Window Duration (minutes)
+                    Year
                   </label>
                   <input
                     type="number"
-                    {...registerEdit('bidWindowDuration', { required: 'Bid window duration is required', min: 1, max: 60 })}
+                    {...registerEdit('year', { 
+                      required: 'Year is required',
+                      min: { value: 2024, message: 'Year must be 2024 or later' }
+                    })}
                     className="input"
-                    placeholder="5"
+                    min="2024"
+                  />
+                  {editErrors.year && (
+                    <p className="mt-1 text-sm text-red-600">{editErrors.year.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bid Window (min)
+                  </label>
+                  <input
+                    type="number"
+                    {...registerEdit('bidWindowDuration', { 
+                      required: 'Bid window duration is required',
+                      min: { value: 1, message: 'Minimum 1 minute' },
+                      max: { value: 60, message: 'Maximum 60 minutes' }
+                    })}
+                    className="input"
+                    min="1"
+                    max="60"
                   />
                   {editErrors.bidWindowDuration && (
                     <p className="mt-1 text-sm text-red-600">{editErrors.bidWindowDuration.message}</p>
@@ -848,13 +888,18 @@ const BidSessionManagement = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Auto Assign Timeout (minutes)
+                    Auto Timeout (min)
                   </label>
                   <input
                     type="number"
-                    {...registerEdit('autoAssignTimeout', { required: 'Auto assign timeout is required', min: 1, max: 30 })}
+                    {...registerEdit('autoAssignTimeout', { 
+                      required: 'Auto-assign timeout is required',
+                      min: { value: 1, message: 'Minimum 1 minute' },
+                      max: { value: 30, message: 'Maximum 30 minutes' }
+                    })}
                     className="input"
-                    placeholder="2"
+                    min="1"
+                    max="30"
                   />
                   {editErrors.autoAssignTimeout && (
                     <p className="mt-1 text-sm text-red-600">{editErrors.autoAssignTimeout.message}</p>
@@ -890,7 +935,7 @@ const BidSessionManagement = () => {
       {/* Session Details Modal */}
       {showSessionDetails && selectedSession && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Session Details</h3>
               <Button
@@ -906,64 +951,81 @@ const BidSessionManagement = () => {
             </div>
             
             <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-primary-600" />
+              <div>
+                <h4 className="font-medium text-gray-900">{selectedSession.name}</h4>
+                <p className="text-sm text-gray-600">{selectedSession.description}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500">Status:</span>
+                  <span className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedSession)}`}>
+                    {getStatusText(selectedSession)}
+                  </span>
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-900">{selectedSession.name}</h4>
-                  <p className="text-sm text-gray-500">{selectedSession.description}</p>
+                  <span className="text-gray-500">Year:</span>
+                  <span className="ml-2 font-medium">{selectedSession.year}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Start Date:</span>
+                  <span className="ml-2 font-medium">{formatDate(selectedSession.scheduledStart)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">End Date:</span>
+                  <span className="ml-2 font-medium">{formatDate(selectedSession.scheduledEnd)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Participants:</span>
+                  <span className="ml-2 font-medium">{selectedSession.participants?.length || 0}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Bid Window:</span>
+                  <span className="ml-2 font-medium">{selectedSession.bidWindowDuration} minutes</span>
                 </div>
               </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center text-sm">
-                  <Clock className="w-4 h-4 text-gray-400 mr-2" />
-                  <span className="text-gray-600">
-                    {formatDate(selectedSession.scheduledStart)} - {formatDate(selectedSession.scheduledEnd)}
-                  </span>
+              
+              {selectedSession.participants && selectedSession.participants.length > 0 && (
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-2">Participants</h5>
+                  <div className="max-h-60 overflow-y-auto border rounded-lg p-4">
+                    <div className="space-y-2">
+                      {selectedSession.participants.map((participant, index) => (
+                        <div key={participant.user._id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <div>
+                            <span className="font-medium">{index + 1}.</span>
+                            <span className="ml-2">{participant.user.firstName} {participant.user.lastName}</span>
+                            <span className="ml-2 text-sm text-gray-500">({participant.user.rank})</span>
+                          </div>
+                          <span className="text-sm text-gray-500">Priority: {participant.bidPriority}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center text-sm">
-                  <Users className="w-4 h-4 text-gray-400 mr-2" />
-                  <span className="text-gray-600">
-                    {selectedSession.participantCount || 0} participants
-                  </span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <Settings className="w-4 h-4 text-gray-400 mr-2" />
-                  <span className="text-gray-600">
-                    Bid window duration: {selectedSession.bidWindowDuration || 5} minutes
-                  </span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <BarChart3 className="w-4 h-4 text-gray-400 mr-2" />
-                  <span className="text-gray-600">
-                    Auto-assign timeout: {selectedSession.autoAssignTimeout || 2} minutes
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end space-x-3 pt-4">
-                <Button
-                  onClick={() => {
-                    setShowSessionDetails(false);
-                    setSelectedSession(null);
-                  }}
-                  variant="secondary"
-                >
-                  Close
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowSessionDetails(false);
-                    handleEditSession(selectedSession);
-                  }}
-                  variant="primary"
-                >
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Edit Session
-                </Button>
-              </div>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-end space-x-3 pt-4">
+              <Button
+                onClick={() => {
+                  setShowSessionDetails(false);
+                  setSelectedSession(null);
+                }}
+                variant="secondary"
+              >
+                Close
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowSessionDetails(false);
+                  handleEditSession(selectedSession);
+                }}
+                variant="primary"
+              >
+                <Edit3 className="w-4 h-4 mr-2" />
+                Edit Session
+              </Button>
             </div>
           </div>
         </div>

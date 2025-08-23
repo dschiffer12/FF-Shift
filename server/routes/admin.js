@@ -194,6 +194,68 @@ router.get('/online-users', async (req, res) => {
   }
 });
 
+// PUT /api/admin/users/:id/station - Update user station assignment
+router.put('/users/:id/station', [
+  body('stationId').optional().isMongoId().withMessage('Invalid station ID'),
+  body('shift').optional().isIn(['A', 'B', 'C']).withMessage('Shift must be A, B, or C')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { stationId, shift } = req.body;
+    const userId = req.params.id;
+
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+         // If stationId is provided, validate the station exists
+     if (stationId) {
+       const station = await Station.findById(stationId);
+      if (!station) {
+        return res.status(404).json({ error: 'Station not found' });
+      }
+
+      // Check station capacity for the specified shift
+      const currentAssignments = station.currentAssignments[shift] || [];
+      const shiftCapacity = station.shiftCapacity[shift] || 0;
+      
+      if (currentAssignments.length >= shiftCapacity) {
+        return res.status(400).json({ 
+          error: `Station ${station.name} Shift ${shift} is at full capacity (${shiftCapacity} users)` 
+        });
+      }
+
+      // Update user's station assignment
+      user.currentStation = stationId;
+      user.currentShift = shift || 'A';
+    } else {
+      // Remove station assignment
+      user.currentStation = null;
+      user.currentShift = null;
+    }
+
+    await user.save();
+
+    // Populate the station information for the response
+    await user.populate('currentStation', 'name number');
+
+    res.json({ 
+      message: 'Station assignment updated successfully',
+      user: user.toObject()
+    });
+
+  } catch (error) {
+    console.error('Error updating user station assignment:', error);
+    res.status(500).json({ error: 'Failed to update station assignment' });
+  }
+});
+
 // GET /api/admin/users - Get all users (for user management)
 router.get('/users', async (req, res) => {
   try {

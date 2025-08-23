@@ -547,6 +547,112 @@ router.post('/:id/resume', authenticateAdmin, async (req, res) => {
   }
 });
 
+// POST /api/bid-sessions/:id/skip-turn - Skip current participant's turn (admin only)
+router.post('/:id/skip-turn', authenticateAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const bidSession = await BidSession.findById(req.params.id);
+    
+    if (!bidSession) {
+      return res.status(404).json({ error: 'Bid session not found' });
+    }
+
+    if (bidSession.status !== 'active') {
+      return res.status(400).json({ error: 'Bid session is not active' });
+    }
+
+    // Find the current participant
+    const currentParticipant = bidSession.participants.find(p => p.position === bidSession.currentParticipant);
+    
+    if (!currentParticipant || currentParticipant.user.toString() !== userId) {
+      return res.status(400).json({ error: 'Invalid current participant' });
+    }
+
+    // Mark the current participant as skipped
+    currentParticipant.hasBid = true;
+    currentParticipant.skipped = true;
+    bidSession.completedBids++;
+
+    // Advance to next participant
+    bidSession.currentParticipant++;
+
+    if (bidSession.currentParticipant > bidSession.participants.length) {
+      // Session is complete
+      bidSession.status = 'completed';
+      bidSession.actualEnd = new Date();
+    } else {
+      // Set up next participant's time window
+      bidSession.setCurrentParticipantTimeWindow();
+    }
+
+    await bidSession.save();
+
+    // Emit turn update to all connected clients
+    if (global.io) {
+      global.io.emit('turn-updated', {
+        sessionId: bidSession._id,
+        currentParticipant: bidSession.currentParticipant,
+        completedBids: bidSession.completedBids,
+        status: bidSession.status
+      });
+    }
+
+    res.json({ 
+      message: 'Turn skipped successfully',
+      session: bidSession.getSummary()
+    });
+
+  } catch (error) {
+    console.error('Skip turn error:', error);
+    res.status(500).json({ error: 'Failed to skip turn' });
+  }
+});
+
+// POST /api/bid-sessions/:id/auto-assign - Auto assign current participant (admin only)
+router.post('/:id/auto-assign', authenticateAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const bidSession = await BidSession.findById(req.params.id);
+    
+    if (!bidSession) {
+      return res.status(404).json({ error: 'Bid session not found' });
+    }
+
+    if (bidSession.status !== 'active') {
+      return res.status(400).json({ error: 'Bid session is not active' });
+    }
+
+    // Find the current participant
+    const currentParticipant = bidSession.participants.find(p => p.position === bidSession.currentParticipant);
+    
+    if (!currentParticipant || currentParticipant.user.toString() !== userId) {
+      return res.status(400).json({ error: 'Invalid current participant' });
+    }
+
+    // Auto assign the current participant
+    await bidSession.autoAssignCurrentParticipant();
+
+    // Emit turn update to all connected clients
+    if (global.io) {
+      global.io.emit('turn-updated', {
+        sessionId: bidSession._id,
+        currentParticipant: bidSession.currentParticipant,
+        completedBids: bidSession.completedBids,
+        status: bidSession.status
+      });
+    }
+
+    res.json({ 
+      message: 'Participant auto-assigned successfully',
+      session: bidSession.getSummary()
+    });
+
+  } catch (error) {
+    console.error('Auto assign error:', error);
+    res.status(500).json({ error: 'Failed to auto-assign participant' });
+  }
+});
+
 // Get current user's participation in bid session
 router.get('/:id/my-participation', authenticateToken, async (req, res) => {
   try {

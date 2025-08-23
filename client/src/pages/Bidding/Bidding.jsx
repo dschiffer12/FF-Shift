@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import TurnDisplay from '../../components/Bidding/TurnDisplay';
 import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -39,6 +40,7 @@ const Bidding = () => {
     position: ''
   });
   const [hasNewSessions, setHasNewSessions] = useState(false);
+  const [currentActiveSession, setCurrentActiveSession] = useState(null);
 
   useEffect(() => {
     fetchActiveSessions();
@@ -68,12 +70,20 @@ const Bidding = () => {
       fetchMyBids(); // Refresh user's bids
     };
 
+    // Listen for turn updates
+    const handleTurnUpdate = (data) => {
+      console.log('Turn updated:', data);
+      fetchActiveSessions(); // Refresh to get updated turn information
+    };
+
     socket.on('new-bid-session', handleNewBidSession);
     socket.on('bid-session-started', handleSessionStatusChange);
     socket.on('bid-session-paused', handleSessionStatusChange);
     socket.on('bid-session-resumed', handleSessionStatusChange);
     socket.on('bid-session-completed', handleSessionStatusChange);
     socket.on('bid-submitted', handleBidSubmitted);
+    socket.on('turn-updated', handleTurnUpdate);
+    socket.on('turn-timeout-warning', handleTurnUpdate);
 
     return () => {
       socket.off('new-bid-session', handleNewBidSession);
@@ -82,6 +92,8 @@ const Bidding = () => {
       socket.off('bid-session-resumed', handleSessionStatusChange);
       socket.off('bid-session-completed', handleSessionStatusChange);
       socket.off('bid-submitted', handleBidSubmitted);
+      socket.off('turn-updated', handleTurnUpdate);
+      socket.off('turn-timeout-warning', handleTurnUpdate);
     };
   }, [socket, isConnected]);
 
@@ -89,7 +101,12 @@ const Bidding = () => {
     try {
       setLoading(true);
       const response = await api.get(endpoints.bidSessions.current);
-      setActiveSessions(response.data.sessions || []);
+      const sessions = response.data.sessions || [];
+      setActiveSessions(sessions);
+      
+      // Find the currently active session
+      const activeSession = sessions.find(s => s.status === 'active');
+      setCurrentActiveSession(activeSession);
     } catch (error) {
       console.error('Error fetching active sessions:', error);
       toast.error('Failed to load active sessions');
@@ -210,7 +227,7 @@ const Bidding = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Active Sessions */}
+        {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Current Status */}
           <div className="card">
@@ -253,6 +270,11 @@ const Bidding = () => {
               </div>
             </div>
           </div>
+
+          {/* Turn Display - Show when there's an active session */}
+          {currentActiveSession && (
+            <TurnDisplay session={currentActiveSession} currentUser={user} />
+          )}
 
           {/* Active Bid Sessions */}
           <div className="card">
@@ -323,27 +345,27 @@ const Bidding = () => {
                         >
                           View Details
                         </Button>
-                                                       {session.status === 'active' && (
-                                 <>
-                                   <Button
-                                     variant="primary"
-                                     size="sm"
-                                     onClick={() => {
-                                       setSelectedSession(session);
-                                       setShowBidModal(true);
-                                     }}
-                                   >
-                                     Place Bid
-                                   </Button>
-                                   <Button
-                                     variant="secondary"
-                                     size="sm"
-                                     onClick={() => window.location.href = `/live-bid/${session._id}`}
-                                   >
-                                     Join Live Session
-                                   </Button>
-                                 </>
-                               )}
+                        {session.status === 'active' && (
+                          <>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedSession(session);
+                                setShowBidModal(true);
+                              }}
+                            >
+                              Place Bid
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => window.location.href = `/live-bid/${session._id}`}
+                            >
+                              Join Live Session
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}

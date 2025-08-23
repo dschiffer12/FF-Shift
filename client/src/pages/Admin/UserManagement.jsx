@@ -22,7 +22,9 @@ import {
   Download,
   RefreshCw,
   TrendingUp,
-  Calendar
+  Calendar,
+  MapPin,
+  Settings
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -40,8 +42,12 @@ const UserManagement = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showUserDetails, setShowUserDetails] = useState(false);
+  const [showStationAssignment, setShowStationAssignment] = useState(false);
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
+  const [stations, setStations] = useState([]);
+  // eslint-disable-next-line no-unused-vars
+  const [loadingStations, setLoadingStations] = useState(false);
 
   const {
     register,
@@ -56,6 +62,14 @@ const UserManagement = () => {
     formState: { errors: editErrors },
     reset: resetEdit,
     setValue: setEditValue
+  } = useForm();
+
+  const {
+    register: registerStation,
+    handleSubmit: handleStationSubmit,
+    formState: { errors: stationErrors },
+    reset: resetStation,
+    setValue: setStationValue
   } = useForm();
 
   // Calculate seniority score for display
@@ -100,6 +114,50 @@ const UserManagement = () => {
     }
   };
 
+  const fetchStations = async () => {
+    try {
+      setLoadingStations(true);
+      const response = await api.get('/api/stations');
+      setStations(response.data.stations || []);
+    } catch (error) {
+      console.error('Error fetching stations:', error);
+      toast.error('Failed to load stations');
+    } finally {
+      setLoadingStations(false);
+    }
+  };
+
+  const handleStationAssignment = async (data) => {
+    try {
+      console.log('Station assignment data:', data);
+      console.log('Selected user:', selectedUser);
+      const response = await api.put(`/api/admin/users/${selectedUser._id}/station`, {
+        stationId: data.stationId,
+        shift: data.shift
+      });
+      
+      setUsers(users.map(user => 
+        user._id === selectedUser._id ? response.data.user : user
+      ));
+      
+      setShowStationAssignment(false);
+      setSelectedUser(null);
+      resetStation();
+      toast.success('Station assignment updated successfully');
+    } catch (error) {
+      console.error('Error updating station assignment:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.error || 'Failed to update station assignment');
+    }
+  };
+
+  const handleAssignStation = (user) => {
+    setSelectedUser(user);
+    setStationValue('stationId', user.currentStation?._id || '');
+    setStationValue('shift', user.currentShift || 'A');
+    setShowStationAssignment(true);
+  };
+
   const filterUsers = useCallback(() => {
     let filtered = users;
 
@@ -133,6 +191,12 @@ const UserManagement = () => {
         break;
       case 'junior':
         filtered = filtered.filter(user => (user.yearsOfService || 0) < 5);
+        break;
+      case 'assigned':
+        filtered = filtered.filter(user => user.currentStation);
+        break;
+      case 'unassigned':
+        filtered = filtered.filter(user => !user.currentStation);
         break;
       default:
         break;
@@ -180,6 +244,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers();
+    fetchStations();
   }, []);
 
   useEffect(() => {
@@ -353,6 +418,8 @@ const UserManagement = () => {
                 <option value="pending">Pending</option>
                 <option value="senior">Senior (10+ years)</option>
                 <option value="junior">Junior (&lt;5 years)</option>
+                <option value="assigned">Assigned to Station</option>
+                <option value="unassigned">Unassigned</option>
               </select>
             </div>
           </div>
@@ -471,7 +538,19 @@ const UserManagement = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.currentStation?.name || 'Unassigned'}
+                      <div className="flex items-center space-x-2">
+                        <Building2 className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <div className="font-medium">
+                            {user.currentStation?.name || 'Unassigned'}
+                          </div>
+                          {user.currentStation && user.currentShift && (
+                            <div className="text-xs text-gray-500">
+                              Shift {user.currentShift}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
@@ -488,6 +567,15 @@ const UserManagement = () => {
                           size="sm"
                         >
                           <Edit3 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => handleAssignStation(user)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600 hover:text-blue-800"
+                          title="Assign Station"
+                        >
+                          <MapPin className="w-4 h-4" />
                         </Button>
                         {user._id !== currentUser?._id && (
                           <Button
@@ -985,6 +1073,16 @@ const UserManagement = () => {
                 <Button
                   onClick={() => {
                     setShowUserDetails(false);
+                    handleAssignStation(selectedUser);
+                  }}
+                  variant="secondary"
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Assign Station
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowUserDetails(false);
                     handleEditUser(selectedUser);
                   }}
                   variant="primary"
@@ -994,6 +1092,128 @@ const UserManagement = () => {
                 </Button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Station Assignment Modal */}
+      {showStationAssignment && selectedUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Assign Station</h3>
+              <Button
+                onClick={() => {
+                  setShowStationAssignment(false);
+                  setSelectedUser(null);
+                  resetStation();
+                }}
+                variant="ghost"
+                size="sm"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <div className="mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Users className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">
+                    {selectedUser.firstName} {selectedUser.lastName}
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    {selectedUser.rank} - {selectedUser.position}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <form onSubmit={handleStationSubmit(handleStationAssignment)} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Current Station
+                </label>
+                <div className="text-sm text-gray-600 mb-2">
+                  {selectedUser.currentStation?.name || 'Unassigned'}
+                  {selectedUser.currentShift && ` - Shift ${selectedUser.currentShift}`}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Assign to Station
+                </label>
+                <select
+                  {...registerStation('stationId')}
+                  className="input"
+                >
+                  <option value="">Select Station</option>
+                  {stations.map((station) => (
+                    <option key={station._id} value={station._id}>
+                      {station.name} (Station {station.number})
+                    </option>
+                  ))}
+                </select>
+                {stationErrors.stationId && (
+                  <p className="mt-1 text-sm text-red-600">{stationErrors.stationId.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Shift
+                </label>
+                <select
+                  {...registerStation('shift', { required: 'Shift is required' })}
+                  className="input"
+                >
+                  <option value="A">Shift A</option>
+                  <option value="B">Shift B</option>
+                  <option value="C">Shift C</option>
+                </select>
+                {stationErrors.shift && (
+                  <p className="mt-1 text-sm text-red-600">{stationErrors.shift.message}</p>
+                )}
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <Settings className="w-4 h-4 text-blue-600 mt-0.5" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium">Station Assignment Rules:</p>
+                    <ul className="mt-1 space-y-1 text-xs">
+                      <li>• Users can only be assigned to one station at a time</li>
+                      <li>• Station capacity will be checked automatically</li>
+                      <li>• Previous assignments will be cleared</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setShowStationAssignment(false);
+                    setSelectedUser(null);
+                    resetStation();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Assign Station
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}
