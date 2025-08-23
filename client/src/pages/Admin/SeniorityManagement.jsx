@@ -18,7 +18,8 @@ import {
   X,
   Save,
   Plus,
-  Minus
+  Minus,
+  MapPin
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -30,6 +31,7 @@ const SeniorityManagement = () => {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
+  const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -44,6 +46,11 @@ const SeniorityManagement = () => {
     rank: '',
     position: '',
     manualSeniorityScore: 0
+  });
+  const [showStationAssignment, setShowStationAssignment] = useState(false);
+  const [stationAssignmentForm, setStationAssignmentForm] = useState({
+    stationId: '',
+    shift: 'A'
   });
 
   // Calculate seniority score for display
@@ -119,6 +126,16 @@ const SeniorityManagement = () => {
       toast.error('Failed to load users');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStations = async () => {
+    try {
+      const response = await api.get('/api/stations');
+      setStations(response.data.stations || []);
+    } catch (error) {
+      console.error('Error fetching stations:', error);
+      toast.error('Failed to load stations');
     }
   };
 
@@ -208,6 +225,7 @@ const SeniorityManagement = () => {
 
   useEffect(() => {
     fetchUsers();
+    fetchStations();
   }, []);
 
   useEffect(() => {
@@ -302,6 +320,49 @@ const SeniorityManagement = () => {
       console.error('Error adjusting seniority:', error);
       toast.error('Failed to adjust seniority');
     }
+  };
+
+  const handleAssignStation = async (user) => {
+    setEditingUser(user);
+    setStationAssignmentForm({
+      stationId: user.currentStation?._id || '',
+      shift: user.currentShift || 'A'
+    });
+    setShowStationAssignment(true);
+  };
+
+  const handleSaveStationAssignment = async () => {
+    try {
+      const response = await api.put(`/api/admin/users/${editingUser._id}/station`, {
+        stationId: stationAssignmentForm.stationId,
+        shift: stationAssignmentForm.shift
+      });
+
+      setUsers(users.map(user => 
+        user._id === editingUser._id ? response.data.user : user
+      ));
+
+      setShowStationAssignment(false);
+      setEditingUser(null);
+      setStationAssignmentForm({
+        stationId: '',
+        shift: 'A'
+      });
+
+      toast.success('Station assigned successfully');
+    } catch (error) {
+      console.error('Error assigning station:', error);
+      toast.error(error.response?.data?.error || 'Failed to assign station');
+    }
+  };
+
+  const handleCancelStationAssignment = () => {
+    setShowStationAssignment(false);
+    setEditingUser(null);
+    setStationAssignmentForm({
+      stationId: '',
+      shift: 'A'
+    });
   };
 
   const exportSeniorityList = () => {
@@ -597,6 +658,15 @@ const SeniorityManagement = () => {
                           <Edit3 className="w-4 h-4" />
                         </Button>
                         <Button
+                          onClick={() => handleAssignStation(user)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600 hover:text-blue-800"
+                          title="Assign Station"
+                        >
+                          <MapPin className="w-4 h-4" />
+                        </Button>
+                        <Button
                           onClick={() => handleQuickAdjust(user, 1)}
                           variant="ghost"
                           size="sm"
@@ -764,6 +834,95 @@ const SeniorityManagement = () => {
         </div>
       )}
 
+      {/* Station Assignment Modal */}
+      {showStationAssignment && editingUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Assign Station</h3>
+              <Button
+                onClick={handleCancelStationAssignment}
+                variant="ghost"
+                size="sm"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700">
+                <strong>Note:</strong> After assigning a station, you may need to refresh the Station Management tab to see the updated assignments.
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+                  <User className="w-6 h-6 text-primary-600" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">
+                    {editingUser.firstName} {editingUser.lastName}
+                  </h4>
+                  <p className="text-sm text-gray-500">ID: {editingUser.employeeId}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Station
+                  </label>
+                  <select
+                    value={stationAssignmentForm.stationId}
+                    onChange={(e) => setStationAssignmentForm({...stationAssignmentForm, stationId: e.target.value})}
+                    className="input"
+                  >
+                    <option value="">Select Station</option>
+                    {stations.map(station => (
+                      <option key={station._id} value={station._id}>
+                        {station.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Shift
+                  </label>
+                  <select
+                    value={stationAssignmentForm.shift}
+                    onChange={(e) => setStationAssignmentForm({...stationAssignmentForm, shift: e.target.value})}
+                    className="input"
+                  >
+                    <option value="A">A Shift</option>
+                    <option value="B">B Shift</option>
+                    <option value="C">C Shift</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-4">
+                <Button
+                  onClick={handleCancelStationAssignment}
+                  variant="secondary"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveStationAssignment}
+                  variant="primary"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Assignment
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* User Details Modal */}
       {showUserDetails && selectedUser && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -851,6 +1010,16 @@ const SeniorityManagement = () => {
                   variant="secondary"
                 >
                   Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowUserDetails(false);
+                    handleAssignStation(selectedUser);
+                  }}
+                  variant="secondary"
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Assign Station
                 </Button>
                 <Button
                   onClick={() => {

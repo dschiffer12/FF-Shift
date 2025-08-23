@@ -215,8 +215,8 @@ router.put('/users/:id/station', [
     }
 
          // If stationId is provided, validate the station exists
-     if (stationId) {
-       const station = await Station.findById(stationId);
+    if (stationId) {
+      const station = await Station.findById(stationId);
       if (!station) {
         return res.status(404).json({ error: 'Station not found' });
       }
@@ -231,11 +231,44 @@ router.put('/users/:id/station', [
         });
       }
 
+      // Remove user from any existing station assignment first
+      if (user.currentStation) {
+        const oldStation = await Station.findById(user.currentStation);
+        if (oldStation) {
+          // Remove from old station's assignments
+          oldStation.currentAssignments[user.currentShift] = oldStation.currentAssignments[user.currentShift].filter(
+            assignment => assignment.user.toString() !== user._id.toString()
+          );
+          await oldStation.save();
+        }
+      }
+
+      // Add user to new station's assignments
+      station.currentAssignments[shift] = station.currentAssignments[shift] || [];
+      station.currentAssignments[shift].push({
+        user: user._id,
+        position: user.position || 'Firefighter',
+        assignedAt: new Date()
+      });
+      await station.save();
+
       // Update user's station assignment
       user.currentStation = stationId;
       user.currentShift = shift || 'A';
     } else {
-      // Remove station assignment
+      // Remove user from current station assignment
+      if (user.currentStation) {
+        const oldStation = await Station.findById(user.currentStation);
+        if (oldStation) {
+          // Remove from old station's assignments
+          oldStation.currentAssignments[user.currentShift] = oldStation.currentAssignments[user.currentShift].filter(
+            assignment => assignment.user.toString() !== user._id.toString()
+          );
+          await oldStation.save();
+        }
+      }
+
+      // Remove station assignment from user
       user.currentStation = null;
       user.currentShift = null;
     }
