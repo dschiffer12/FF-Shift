@@ -81,18 +81,117 @@ export const SocketProvider = ({ children }) => {
       toast.success(`Bid session "${data.sessionName}" has completed!`);
     });
 
+    // New bid session notification
+    newSocket.on('new-bid-session', (data) => {
+      toast.success(`New bid session "${data.sessionName}" has been created!`, {
+        duration: 6000,
+        action: {
+          label: 'View',
+          onClick: () => {
+            // Navigate to bidding page
+            window.location.href = '/bidding';
+          }
+        }
+      });
+      
+      // Automatically join the bid session room
+      newSocket.emit('join-bid-session', { sessionId: data.sessionId });
+    });
+
+    // Admin notification for session creation
+    newSocket.on('bid-session-created', (data) => {
+      if (user?.isAdmin) {
+        toast.success(`Bid session "${data.sessionName}" created with ${data.participantCount} participants`, {
+          duration: 5000
+        });
+      }
+    });
+
+    // Admin notification for session deletion
+    newSocket.on('bid-session-deleted', (data) => {
+      if (user?.isAdmin) {
+        toast.info(`Bid session "${data.sessionName}" has been deleted`, {
+          duration: 4000
+        });
+      }
+    });
+
+    // Notification when added to a bid session
+    newSocket.on('added-to-bid-session', (data) => {
+      toast.success(`You have been added to bid session "${data.sessionName}"!`, {
+        duration: 6000,
+        action: {
+          label: 'View Session',
+          onClick: () => {
+            window.location.href = '/bidding';
+          }
+        }
+      });
+    });
+
+    // Admin notification for participants added
+    newSocket.on('participants-added', (data) => {
+      if (user?.isAdmin) {
+        toast.success(`${data.addedCount} participants added to "${data.sessionName}" (Total: ${data.totalParticipants})`, {
+          duration: 5000
+        });
+      }
+    });
+
     // Turn management events
     newSocket.on('turn-starting-soon', (data) => {
-      toast.info(`Your turn is starting in ${data.countdown} minutes`);
+      toast.info(`Your turn is starting in ${data.countdown} minutes`, {
+        duration: 10000,
+        action: {
+          label: 'Join Now',
+          onClick: () => {
+            window.location.href = '/bidding';
+          }
+        }
+      });
     });
 
     newSocket.on('turn-timeout-warning', (data) => {
-      toast.error(`Warning: Your turn will end in ${data.remainingTime} seconds!`);
+      toast.error(`Warning: Your turn will end in ${data.remainingTime} seconds!`, {
+        duration: 5000,
+        action: {
+          label: 'Bid Now',
+          onClick: () => {
+            window.location.href = '/bidding';
+          }
+        }
+      });
+    });
+
+    newSocket.on('turn-started', (data) => {
+      if (data.userId === user?._id) {
+        toast.success(`It's your turn to bid! You have ${Math.floor(data.duration / 60)} minutes.`, {
+          duration: 8000,
+          action: {
+            label: 'Start Bidding',
+            onClick: () => {
+              window.location.href = '/bidding';
+            }
+          }
+        });
+      }
     });
 
     // Bid events
     newSocket.on('bid-received', (data) => {
       toast.success(`Bid received for ${data.station} - ${data.shift} shift`);
+    });
+
+    newSocket.on('bid-submitted', (data) => {
+      if (data.userId === user?._id) {
+        toast.success(`Your bid for ${data.station} - ${data.shift} shift has been submitted successfully!`);
+      } else {
+        toast.info(`${data.userName} submitted a bid for ${data.station} - ${data.shift} shift`);
+      }
+    });
+
+    newSocket.on('auto-assignment', (data) => {
+      toast.warning(`You have been auto-assigned to ${data.station} - ${data.shift} shift due to timeout.`);
     });
 
     newSocket.on('bid-conflict', (data) => {

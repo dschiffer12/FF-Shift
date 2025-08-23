@@ -56,6 +56,13 @@ const userSchema = new mongoose.Schema({
     default: 0
   },
   
+  // Manual seniority score override
+  manualSeniorityScore: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
+  
   // Current Assignment
   currentStation: {
     type: mongoose.Schema.Types.ObjectId,
@@ -186,6 +193,11 @@ userSchema.virtual('fullName').get(function() {
 
 // Virtual for seniority score
 userSchema.virtual('seniorityScore').get(function() {
+  // If manual seniority score is set, use that
+  if (this.manualSeniorityScore && this.manualSeniorityScore > 0) {
+    return this.manualSeniorityScore;
+  }
+  
   // Calculate seniority score based on years of service, rank, and position
   let score = this.yearsOfService * 10;
   

@@ -81,6 +81,9 @@ const AdminDashboard = () => {
       case 'start-bid-session':
         navigate('/admin/bid-sessions');
         break;
+      case 'view-seniority':
+        navigate('/admin/seniority');
+        break;
       case 'export-data':
         toast.success('Exporting data...');
         break;
@@ -301,6 +304,14 @@ const AdminDashboard = () => {
                 >
                   <Calendar className="w-4 h-4 mr-3" />
                   Start Bid Session
+                </Button>
+                <Button
+                  onClick={() => handleQuickAction('view-seniority')}
+                  variant="secondary"
+                  className="w-full justify-start"
+                >
+                  <TrendingUp className="w-4 h-4 mr-3" />
+                  View Seniority List
                 </Button>
                 <Button
                   onClick={() => handleQuickAction('manage-permissions')}

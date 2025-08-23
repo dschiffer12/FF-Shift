@@ -19,6 +19,7 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import UserManagement from './pages/Admin/UserManagement';
 import StationManagement from './pages/Admin/StationManagement';
 import BidSessionManagement from './pages/Admin/BidSessionManagement';
+import SeniorityManagement from './pages/Admin/SeniorityManagement';
 import LoadingSpinner from './components/UI/LoadingSpinner';
 
 // Protected Route Component
@@ -125,6 +126,11 @@ function App() {
             <Route path="admin/bid-sessions" element={
               <ProtectedRoute requireAdmin>
                 <BidSessionManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="admin/seniority" element={
+              <ProtectedRoute requireAdmin>
+                <SeniorityManagement />
               </ProtectedRoute>
             } />
           </Route>

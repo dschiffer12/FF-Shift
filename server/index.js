@@ -59,8 +59,9 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Initialize Socket.IO
-initializeSocket(server);
+// Initialize Socket.IO and make it globally available
+const io = initializeSocket(server);
+global.io = io;
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -74,7 +74,9 @@ router.post('/', [
   body('scheduledStart').isISO8601().withMessage('Valid start date is required'),
   body('scheduledEnd').isISO8601().withMessage('Valid end date is required'),
   body('bidWindowDuration').optional().isInt({ min: 1, max: 60 }).withMessage('Bid window must be between 1-60 minutes'),
-  body('autoAssignTimeout').optional().isInt({ min: 1, max: 30 }).withMessage('Auto-assign timeout must be between 1-30 minutes')
+  body('autoAssignTimeout').optional().isInt({ min: 1, max: 30 }).withMessage('Auto-assign timeout must be between 1-30 minutes'),
+  body('participantIds').optional().isArray().withMessage('Participant IDs must be an array'),
+  body('participantIds.*').optional().isMongoId().withMessage('Invalid participant ID format')
 ], authenticateAdmin, async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -90,7 +92,8 @@ router.post('/', [
       scheduledEnd, 
       bidWindowDuration, 
       autoAssignTimeout,
-      settings 
+      settings,
+      participantIds 
     } = req.body;
 
     // Validate dates
@@ -112,9 +115,58 @@ router.post('/', [
 
     await bidSession.save();
 
+    // Add participants if provided
+    if (participantIds && participantIds.length > 0) {
+      // Get users and calculate their bid priorities
+      const users = await User.find({ _id: { $in: participantIds } });
+      
+      for (const user of users) {
+        user.calculateBidPriority();
+        await bidSession.addParticipant(user._id, user.bidPriority);
+      }
+
+      // Sort participants by bid priority (highest first)
+      bidSession.participants.sort((a, b) => b.bidPriority - a.bidPriority);
+      
+      // Update positions after sorting
+      bidSession.participants.forEach((participant, index) => {
+        participant.position = index;
+      });
+      
+      bidSession.totalParticipants = bidSession.participants.length;
+      await bidSession.save();
+    }
+
+    // Get the updated session with participants
+    const updatedSession = await BidSession.findById(bidSession._id)
+      .populate('participants.user', 'firstName lastName rank position employeeId')
+      .populate('createdBy', 'firstName lastName');
+
+    // Emit socket notification to all participants
+    if (global.io && participantIds && participantIds.length > 0) {
+      participantIds.forEach(userId => {
+        global.io.to(`user-${userId}`).emit('new-bid-session', {
+          sessionId: bidSession._id,
+          sessionName: bidSession.name,
+          scheduledStart: bidSession.scheduledStart,
+          scheduledEnd: bidSession.scheduledEnd,
+          participantCount: bidSession.participants.length,
+          createdBy: req.user.firstName + ' ' + req.user.lastName
+        });
+      });
+
+      // Also notify admin room
+      global.io.to('admin_room').emit('bid-session-created', {
+        sessionId: bidSession._id,
+        sessionName: bidSession.name,
+        participantCount: bidSession.participants.length,
+        createdBy: req.user.firstName + ' ' + req.user.lastName
+      });
+    }
+
     res.status(201).json({
       message: 'Bid session created successfully',
-      bidSession: bidSession.getSummary()
+      bidSession: updatedSession.getSummary()
     });
 
   } catch (error) {
@@ -209,6 +261,14 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
 
     await BidSession.findByIdAndDelete(req.params.id);
 
+    // Emit socket notification to admin room
+    if (global.io) {
+      global.io.to('admin_room').emit('bid-session-deleted', {
+        sessionId: req.params.id,
+        sessionName: bidSession.name
+      });
+    }
+
     res.json({ message: 'Bid session deleted successfully' });
 
   } catch (error) {
@@ -264,6 +324,25 @@ router.post('/:id/participants', [
     });
 
     await bidSession.save();
+
+    // Emit socket notification to newly added participants
+    if (global.io) {
+      userIds.forEach(userId => {
+        global.io.to(`user-${userId}`).emit('added-to-bid-session', {
+          sessionId: bidSession._id,
+          sessionName: bidSession.name,
+          participantCount: bidSession.totalParticipants
+        });
+      });
+
+      // Notify admin room
+      global.io.to('admin_room').emit('participants-added', {
+        sessionId: bidSession._id,
+        sessionName: bidSession.name,
+        totalParticipants: bidSession.totalParticipants,
+        addedCount: userIds.length
+      });
+    }
 
     res.json({
       message: 'Participants added successfully',
@@ -333,6 +412,25 @@ router.post('/:id/start', authenticateAdmin, async (req, res) => {
 
     await bidSession.startSession();
 
+    // Emit socket notification to all participants
+    if (global.io && bidSession.participants.length > 0) {
+      bidSession.participants.forEach(participant => {
+        global.io.to(`user-${participant.user}`).emit('bid-session-started', {
+          sessionId: bidSession._id,
+          sessionName: bidSession.name,
+          scheduledStart: bidSession.scheduledStart,
+          scheduledEnd: bidSession.scheduledEnd
+        });
+      });
+
+      // Also notify admin room
+      global.io.to('admin_room').emit('bid-session-started', {
+        sessionId: bidSession._id,
+        sessionName: bidSession.name,
+        participantCount: bidSession.participants.length
+      });
+    }
+
     res.json({
       message: 'Bid session started successfully',
       bidSession: bidSession.getSummary()
@@ -358,6 +456,22 @@ router.post('/:id/pause', authenticateAdmin, async (req, res) => {
 
     await bidSession.pauseSession();
 
+    // Emit socket notification to all participants
+    if (global.io && bidSession.participants.length > 0) {
+      bidSession.participants.forEach(participant => {
+        global.io.to(`user-${participant.user}`).emit('bid-session-paused', {
+          sessionId: bidSession._id,
+          sessionName: bidSession.name
+        });
+      });
+
+      // Also notify admin room
+      global.io.to('admin_room').emit('bid-session-paused', {
+        sessionId: bidSession._id,
+        sessionName: bidSession.name
+      });
+    }
+
     res.json({
       message: 'Bid session paused successfully',
       bidSession: bidSession.getSummary()
@@ -382,6 +496,22 @@ router.post('/:id/resume', authenticateAdmin, async (req, res) => {
     }
 
     await bidSession.resumeSession();
+
+    // Emit socket notification to all participants
+    if (global.io && bidSession.participants.length > 0) {
+      bidSession.participants.forEach(participant => {
+        global.io.to(`user-${participant.user}`).emit('bid-session-resumed', {
+          sessionId: bidSession._id,
+          sessionName: bidSession.name
+        });
+      });
+
+      // Also notify admin room
+      global.io.to('admin_room').emit('bid-session-resumed', {
+        sessionId: bidSession._id,
+        sessionName: bidSession.name
+      });
+    }
 
     res.json({
       message: 'Bid session resumed successfully',

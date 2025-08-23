@@ -158,9 +158,13 @@ router.post('/users', [
 
 // PUT /api/admin/users/:id - Update user
 router.put('/users/:id', [
-  body('firstName').notEmpty().withMessage('First name is required'),
-  body('lastName').notEmpty().withMessage('Last name is required'),
-  body('email').isEmail().withMessage('Valid email is required')
+  body('firstName').optional().notEmpty().withMessage('First name cannot be empty'),
+  body('lastName').optional().notEmpty().withMessage('Last name cannot be empty'),
+  body('email').optional().isEmail().withMessage('Valid email is required'),
+  body('yearsOfService').optional().isInt({ min: 0, max: 50 }).withMessage('Years of service must be between 0 and 50'),
+  body('manualSeniorityScore').optional().isInt({ min: 0 }).withMessage('Manual seniority score must be 0 or greater'),
+  body('rank').optional().isIn(['Firefighter', 'Engineer', 'Lieutenant', 'Captain', 'Battalion Chief', 'Deputy Chief', 'Chief']).withMessage('Invalid rank'),
+  body('position').optional().isIn(['Firefighter', 'Paramedic', 'EMT', 'Driver', 'Operator', 'Officer']).withMessage('Invalid position')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -168,7 +172,7 @@ router.put('/users/:id', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { firstName, lastName, email, phone, rank, position, yearsOfService, isAdmin, isActive } = req.body;
+    const { firstName, lastName, email, phone, rank, position, yearsOfService, isAdmin, isActive, manualSeniorityScore } = req.body;
 
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -176,23 +180,24 @@ router.put('/users/:id', [
     }
 
     // Check if email is being changed and if it's already taken
-    if (email !== user.email) {
+    if (email !== undefined && email !== user.email) {
       const existingUser = await User.findOne({ email });
       if (existingUser) {
         return res.status(400).json({ error: 'Email already in use' });
       }
     }
 
-    // Update user fields
-    user.firstName = firstName;
-    user.lastName = lastName;
-    user.email = email;
-    user.phone = phone;
-    user.rank = rank;
-    user.position = position;
-    user.yearsOfService = yearsOfService;
-    user.isAdmin = isAdmin;
-    user.isActive = isActive;
+    // Update user fields (only update provided fields)
+    if (firstName !== undefined) user.firstName = firstName;
+    if (lastName !== undefined) user.lastName = lastName;
+    if (email !== undefined) user.email = email;
+    if (phone !== undefined) user.phone = phone;
+    if (rank !== undefined) user.rank = rank;
+    if (position !== undefined) user.position = position;
+    if (yearsOfService !== undefined) user.yearsOfService = yearsOfService;
+    if (isAdmin !== undefined) user.isAdmin = isAdmin;
+    if (isActive !== undefined) user.isActive = isActive;
+    if (manualSeniorityScore !== undefined) user.manualSeniorityScore = manualSeniorityScore;
 
     await user.save();
 

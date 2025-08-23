@@ -12,7 +12,8 @@ import {
   X,
   BarChart3,
   Shield,
-  Target
+  Target,
+  TrendingUp
 } from 'lucide-react';
 import Button from '../UI/Button';
 
@@ -29,6 +30,7 @@ const Layout = () => {
     ...(user?.isAdmin ? [
       { name: 'Admin Dashboard', href: '/admin', icon: BarChart3 },
       { name: 'User Management', href: '/admin/users', icon: Users },
+      { name: 'Seniority Management', href: '/admin/seniority', icon: TrendingUp },
       { name: 'Station Management', href: '/admin/stations', icon: Building2 },
       { name: 'Bid Sessions', href: '/admin/bid-sessions', icon: Clock },
     ] : []),

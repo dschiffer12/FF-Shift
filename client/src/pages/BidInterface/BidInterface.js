@@ -29,6 +29,7 @@ const BidInterface = () => {
   const [isUserTurn, setIsUserTurn] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [submittingBid, setSubmittingBid] = useState(false);
   const [bidHistory, setBidHistory] = useState([]);
   const [sessionStatus, setSessionStatus] = useState('waiting');

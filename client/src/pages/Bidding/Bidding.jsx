@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSocket } from '../../contexts/SocketContext';
 import { 
   Target, 
   Clock, 
@@ -25,6 +26,7 @@ import toast from 'react-hot-toast';
 
 const Bidding = () => {
   const { user } = useAuth();
+  const { socket, isConnected } = useSocket();
   const [activeSessions, setActiveSessions] = useState([]);
   const [myBids, setMyBids] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,11 +38,52 @@ const Bidding = () => {
     shift: '',
     position: ''
   });
+  const [hasNewSessions, setHasNewSessions] = useState(false);
 
   useEffect(() => {
     fetchActiveSessions();
     fetchMyBids();
   }, []);
+
+  // Socket event listeners for real-time updates
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Listen for new bid sessions
+    const handleNewBidSession = (data) => {
+      console.log('New bid session received:', data);
+      setHasNewSessions(true);
+      fetchActiveSessions(); // Refresh the sessions list
+    };
+
+    // Listen for session status changes
+    const handleSessionStatusChange = (data) => {
+      console.log('Session status changed:', data);
+      fetchActiveSessions(); // Refresh the sessions list
+    };
+
+    // Listen for bid submissions
+    const handleBidSubmitted = (data) => {
+      console.log('Bid submitted:', data);
+      fetchMyBids(); // Refresh user's bids
+    };
+
+    socket.on('new-bid-session', handleNewBidSession);
+    socket.on('bid-session-started', handleSessionStatusChange);
+    socket.on('bid-session-paused', handleSessionStatusChange);
+    socket.on('bid-session-resumed', handleSessionStatusChange);
+    socket.on('bid-session-completed', handleSessionStatusChange);
+    socket.on('bid-submitted', handleBidSubmitted);
+
+    return () => {
+      socket.off('new-bid-session', handleNewBidSession);
+      socket.off('bid-session-started', handleSessionStatusChange);
+      socket.off('bid-session-paused', handleSessionStatusChange);
+      socket.off('bid-session-resumed', handleSessionStatusChange);
+      socket.off('bid-session-completed', handleSessionStatusChange);
+      socket.off('bid-submitted', handleBidSubmitted);
+    };
+  }, [socket, isConnected]);
 
   const fetchActiveSessions = async () => {
     try {
@@ -145,12 +188,16 @@ const Bidding = () => {
         </div>
         <div className="flex items-center space-x-3">
           <Button
-            onClick={fetchActiveSessions}
+            onClick={() => {
+              fetchActiveSessions();
+              setHasNewSessions(false);
+            }}
             variant="secondary"
             size="sm"
+            className={hasNewSessions ? "bg-orange-100 text-orange-800 border-orange-300" : ""}
           >
             <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
+            Refresh {hasNewSessions && <span className="ml-1 bg-orange-500 text-white rounded-full px-2 py-0.5 text-xs">New</span>}
           </Button>
           <Button
             variant="primary"

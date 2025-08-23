@@ -33,6 +33,9 @@ const BidSessionManagement = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showSessionDetails, setShowSessionDetails] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [showUserSelection, setShowUserSelection] = useState(false);
 
   const {
     register,
@@ -59,6 +62,16 @@ const BidSessionManagement = () => {
       toast.error('Failed to load bid sessions');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await api.get('/api/admin/users');
+      setUsers(response.data.users || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
     }
   };
 
@@ -99,6 +112,7 @@ const BidSessionManagement = () => {
 
   useEffect(() => {
     fetchBidSessions();
+    fetchUsers();
   }, []);
 
   useEffect(() => {
@@ -113,6 +127,7 @@ const BidSessionManagement = () => {
         year: parseInt(data.year),
         bidWindowDuration: parseInt(data.bidWindowDuration),
         autoAssignTimeout: parseInt(data.autoAssignTimeout),
+        participantIds: selectedUsers.map(user => user._id),
         settings: {
           allowMultipleBids: false,
           requirePositionMatch: true,
@@ -125,6 +140,7 @@ const BidSessionManagement = () => {
       
       setBidSessions([...bidSessions, response.data.bidSession]);
       setIsCreating(false);
+      setSelectedUsers([]);
       reset();
       toast.success('Bid session created successfully');
     } catch (error) {
@@ -196,6 +212,60 @@ const BidSessionManagement = () => {
       console.error('Error resuming bid session:', error);
       toast.error(error.response?.data?.error || 'Failed to resume bid session');
     }
+  };
+
+  const handleUserToggle = (user) => {
+    setSelectedUsers(prev => {
+      const isSelected = prev.find(u => u._id === user._id);
+      if (isSelected) {
+        return prev.filter(u => u._id !== user._id);
+      } else {
+        return [...prev, user];
+      }
+    });
+  };
+
+  const handleSelectAllUsers = () => {
+    setSelectedUsers(users.filter(user => user.isActive));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedUsers([]);
+  };
+
+  const calculateSeniorityScore = (user) => {
+    if (!user) return 0;
+    
+    // If user has a manual seniority score, use that
+    if (user.manualSeniorityScore && user.manualSeniorityScore > 0) {
+      return user.manualSeniorityScore;
+    }
+    
+    let score = (user.yearsOfService || 0) * 10;
+    
+    const rankMultipliers = {
+      'Firefighter': 1,
+      'Engineer': 1.2,
+      'Lieutenant': 1.5,
+      'Captain': 2,
+      'Battalion Chief': 3,
+      'Deputy Chief': 4,
+      'Chief': 5
+    };
+    
+    const positionMultipliers = {
+      'Firefighter': 1,
+      'Paramedic': 1.3,
+      'EMT': 1.1,
+      'Driver': 1.2,
+      'Operator': 1.4,
+      'Officer': 1.5
+    };
+    
+    score *= (rankMultipliers[user.rank] || 1);
+    score *= (positionMultipliers[user.position] || 1);
+    
+    return Math.round(score);
   };
 
   const handleEditSession = (session) => {
@@ -449,7 +519,7 @@ const BidSessionManagement = () => {
       {/* Create Session Modal */}
       {isCreating && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div className="relative top-20 mx-auto p-5 border w-[600px] shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Create New Bid Session</h3>
               <Button
@@ -570,12 +640,90 @@ const BidSessionManagement = () => {
                 </div>
               </div>
 
+              {/* User Selection Section */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Select Participants ({selectedUsers.length} selected)
+                  </label>
+                  <div className="flex space-x-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleSelectAllUsers}
+                    >
+                      Select All Active
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleClearSelection}
+                    >
+                      Clear All
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="max-h-48 overflow-y-auto border rounded-lg p-2">
+                  {users.length > 0 ? (
+                    users
+                      .filter(user => user.isActive)
+                      .sort((a, b) => calculateSeniorityScore(b) - calculateSeniorityScore(a))
+                      .map((user) => {
+                        const isSelected = selectedUsers.find(u => u._id === user._id);
+                        return (
+                          <div
+                            key={user._id}
+                            className={`flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-50 ${
+                              isSelected ? 'bg-blue-50 border border-blue-200' : ''
+                            }`}
+                            onClick={() => handleUserToggle(user)}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleUserToggle(user)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {user.firstName} {user.lastName}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {user.rank} • {user.position} • ID: {user.employeeId}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Score: {calculateSeniorityScore(user)}
+                            </div>
+                          </div>
+                        );
+                      })
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      <Users className="w-8 h-8 mx-auto mb-2" />
+                      <p>No users available</p>
+                    </div>
+                  )}
+                </div>
+                {selectedUsers.length === 0 && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    ⚠️ No participants selected. The session will be created without participants.
+                  </p>
+                )}
+              </div>
+
               <div className="flex items-center justify-end space-x-3 pt-4">
                 <Button
                   type="button"
                   variant="secondary"
                   onClick={() => {
                     setIsCreating(false);
+                    setSelectedUsers([]);
                     reset();
                   }}
                 >

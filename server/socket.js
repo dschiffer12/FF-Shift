@@ -42,6 +42,12 @@ const initializeSocket = (server) => {
     socket.on('join-user-room', (data) => {
       socket.join(`user-${data.userId}`);
       console.log(`User ${socket.user.email} joined user room: user-${data.userId}`);
+      
+      // Also join admin room if user is admin
+      if (socket.user.isAdmin) {
+        socket.join('admin_room');
+        console.log(`Admin ${socket.user.email} joined admin room`);
+      }
     });
 
     // Join bid session room
