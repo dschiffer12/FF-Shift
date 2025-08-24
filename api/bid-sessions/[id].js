@@ -1,6 +1,6 @@
 const BidSession = require('../../server/models/BidSession');
 const User = require('../../server/models/User');
-const { connectDB, setCORSHeaders, handlePreflight, authenticateToken } = require('../utils/db');
+const { connectDB, setCORSHeaders, handlePreflight, authenticateToken, authenticateAdmin } = require('../utils/db');
 
 module.exports = async (req, res) => {
   // Set CORS headers
@@ -29,19 +29,19 @@ module.exports = async (req, res) => {
         return res.status(404).json({ error: 'Bid session not found' });
       }
 
+      // Get available stations
+      const Station = require('../../server/models/Station');
+      const availableStations = await Station.find({ isActive: true }).select('name number location availablePositions');
+
       res.status(200).json({
-        bidSession: bidSession.toObject()
+        bidSession: bidSession.toObject(),
+        availableStations: availableStations
       });
     }
 
     // PUT - Update bid session
     else if (req.method === 'PUT') {
-      const decoded = authenticateToken(req);
-      const user = await User.findById(decoded.userId);
-      
-      if (!user || !user.isAdmin) {
-        return res.status(403).json({ error: 'Admin access required' });
-      }
+      const decoded = await authenticateAdmin(req);
 
       const bidSession = await BidSession.findById(id);
       
@@ -83,12 +83,7 @@ module.exports = async (req, res) => {
 
     // DELETE - Delete bid session
     else if (req.method === 'DELETE') {
-      const decoded = authenticateToken(req);
-      const user = await User.findById(decoded.userId);
-      
-      if (!user || !user.isAdmin) {
-        return res.status(403).json({ error: 'Admin access required' });
-      }
+      const decoded = await authenticateAdmin(req);
 
       const bidSession = await BidSession.findById(id);
       
@@ -96,9 +91,9 @@ module.exports = async (req, res) => {
         return res.status(404).json({ error: 'Bid session not found' });
       }
 
-      // Only allow deletion of draft sessions
-      if (bidSession.status !== 'draft') {
-        return res.status(400).json({ error: 'Can only delete draft sessions' });
+      // Only allow deletion of sessions that are not active or completed
+      if (['active', 'completed'].includes(bidSession.status)) {
+        return res.status(400).json({ error: 'Cannot delete active or completed sessions' });
       }
 
       await BidSession.findByIdAndDelete(id);

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import BidHistory from '../../components/Bidding/BidHistory';
 import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -80,10 +81,12 @@ const LiveBidding = () => {
     try {
       setLoading(true);
       const response = await api.get(endpoints.bidSessions.detail(sessionId));
+      console.log('Session data response:', response.data);
       setSession(response.data.bidSession);
       setParticipants(response.data.participants || []);
       setCurrentParticipant(response.data.currentParticipant);
       setAvailableStations(response.data.availableStations || []);
+      console.log('Available stations:', response.data.availableStations);
       
       // Check if it's user's turn
       const myParticipant = response.data.participants?.find(p => p.user._id === user._id);
@@ -125,7 +128,7 @@ const LiveBidding = () => {
         setMyTurn(false);
         setShowBidForm(false);
         setTimeRemaining(0);
-        toast.info('Your turn has ended');
+        toast('Your turn has ended');
       }
     });
 
@@ -158,26 +161,71 @@ const LiveBidding = () => {
       return;
     }
 
-    // TODO: Implement Socket.IO bidding instead of HTTP API
-    // Bidding should be handled through Socket.IO events, not HTTP API calls
-    toast.error('Bidding functionality not implemented yet');
-    
-    // Example of how it should work:
-    // socket.emit('submit_bid', {
-    //   sessionId: sessionId,
-    //   stationId: bidData.station,
-    //   shift: bidData.shift,
-    //   position: bidData.position
-    // });
+    if (!socket) {
+      toast.error('Not connected to server');
+      return;
+    }
+
+    try {
+      console.log('Submitting bid:', {
+        sessionId: sessionId,
+        stationId: bidData.station,
+        shift: bidData.shift,
+        position: bidData.position
+      });
+      console.log('Socket connected:', !!socket);
+      console.log('Socket ID:', socket?.id);
+
+      // Emit the bid submission event
+      socket.emit('submit_bid', {
+        sessionId: sessionId,
+        stationId: bidData.station,
+        shift: bidData.shift,
+        position: bidData.position
+      });
+
+      // Clear the form
+      setBidData({
+        station: '',
+        shift: '',
+        position: ''
+      });
+      setShowBidForm(false);
+      setMyTurn(false);
+
+      toast.success('Bid submitted successfully!');
+    } catch (error) {
+      console.error('Error submitting bid:', error);
+      toast.error('Failed to submit bid. Please try again.');
+    }
   };
 
   const handleSkipTurn = async () => {
-    // TODO: Implement Socket.IO skip turn instead of HTTP API
-    // Skip turn should be handled through Socket.IO events, not HTTP API calls
-    toast.error('Skip turn functionality not implemented yet');
-    
-    // Example of how it should work:
-    // socket.emit('skip_turn', { sessionId: sessionId });
+    if (!socket) {
+      toast.error('Not connected to server');
+      return;
+    }
+
+    try {
+      console.log('Skipping turn for session:', sessionId);
+
+      // Emit the skip turn event
+      socket.emit('skip-turn', { sessionId: sessionId });
+
+      // Clear the form and turn state
+      setBidData({
+        station: '',
+        shift: '',
+        position: ''
+      });
+      setShowBidForm(false);
+      setMyTurn(false);
+
+      toast.success('Turn skipped successfully!');
+    } catch (error) {
+      console.error('Error skipping turn:', error);
+      toast.error('Failed to skip turn. Please try again.');
+    }
   };
 
   const formatTime = (seconds) => {
@@ -385,10 +433,10 @@ const LiveBidding = () => {
                       className="input"
                     >
                       <option value="">Select Position</option>
-                      <option value="firefighter">Firefighter</option>
-                      <option value="paramedic">Paramedic</option>
-                      <option value="driver">Driver</option>
-                      <option value="officer">Officer</option>
+                      <option value="Firefighter">Firefighter</option>
+                      <option value="Paramedic">Paramedic</option>
+                      <option value="Driver">Driver</option>
+                      <option value="Officer">Officer</option>
                     </select>
                   </div>
                 </div>
@@ -531,32 +579,42 @@ const LiveBidding = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
-            </div>
-            <div className="card-body">
-              <div className="space-y-3">
-                <Button
-                  variant="secondary"
-                  className="w-full justify-start"
-                  onClick={() => window.location.href = '/profile'}
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Manage Preferences
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="w-full justify-start"
-                  onClick={() => window.location.href = '/bid-history'}
-                >
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  View History
-                </Button>
-              </div>
-            </div>
-          </div>
+                     {/* Session History */}
+           <div className="card">
+             <div className="card-header">
+               <h3 className="text-lg font-medium text-gray-900">Session History</h3>
+             </div>
+             <div className="card-body">
+               <BidHistory sessionId={sessionId} />
+             </div>
+           </div>
+
+           {/* Quick Actions */}
+           <div className="card">
+             <div className="card-header">
+               <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+             </div>
+             <div className="card-body">
+               <div className="space-y-3">
+                 <Button
+                   variant="secondary"
+                   className="w-full justify-start"
+                   onClick={() => window.location.href = '/profile'}
+                 >
+                   <Settings className="w-4 h-4 mr-2" />
+                   Manage Preferences
+                 </Button>
+                 <Button
+                   variant="secondary"
+                   className="w-full justify-start"
+                   onClick={() => window.location.href = '/bid-history'}
+                 >
+                   <BarChart3 className="w-4 h-4 mr-2" />
+                   View History
+                 </Button>
+               </div>
+             </div>
+           </div>
         </div>
       </div>
     </div>

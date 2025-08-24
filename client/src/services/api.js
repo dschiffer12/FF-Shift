@@ -117,6 +117,7 @@ export const endpoints = {
     moveToBack: (id) => `/api/bid-sessions/${id}/move-to-back`,
     checkTimeExpiration: (id) => `/api/bid-sessions/${id}/check-time-expiration`,
     myParticipation: (id) => `/api/bid-sessions/${id}/my-participation`,
+    history: (id) => `/api/bid-sessions/history?sessionId=${id}`,
   },
 
   // Admin

@@ -8,115 +8,39 @@ module.exports = async (req, res) => {
   // Handle preflight requests
   if (handlePreflight(req, res)) return;
 
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
     await connectDB();
 
-    const decoded = authenticateToken(req);
+    // GET - Get bid session history
+    if (req.method === 'GET') {
+      const { sessionId } = req.query;
+      
+      if (!sessionId) {
+        return res.status(400).json({ error: 'Session ID is required' });
+      }
 
-    const { sessionId, limit = 50 } = req.query;
-
-    if (sessionId) {
-      // Get bid history for a specific session
       const bidSession = await BidSession.findById(sessionId)
-        .populate('participants.user', 'firstName lastName employeeId rank')
-        .populate('participants.assignedStation', 'name number')
-        .populate('participants.bidHistory.station', 'name number');
+        .populate('sessionHistory.userId', 'firstName lastName employeeId')
+        .populate('sessionHistory.station', 'name number location');
 
       if (!bidSession) {
         return res.status(404).json({ error: 'Bid session not found' });
       }
 
-      // Extract bid history from all participants
-      const allBids = [];
-      bidSession.participants.forEach((participant, index) => {
-        participant.bidHistory.forEach(bid => {
-          allBids.push({
-            participant: {
-              name: `${participant.user.firstName} ${participant.user.lastName}`,
-              employeeId: participant.user.employeeId,
-              rank: participant.user.rank,
-              position: index + 1
-            },
-            station: bid.station,
-            shift: bid.shift,
-            position: bid.position,
-            timestamp: bid.timestamp,
-            autoAssigned: bid.autoAssigned || false
-          });
-        });
-      });
-
-      // Sort by timestamp (most recent first)
-      allBids.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      // Get session history
+      const history = bidSession.getSessionHistory();
 
       res.status(200).json({
-        history: allBids.slice(0, parseInt(limit)),
-        session: {
-          id: bidSession._id,
-          name: bidSession.name,
-          status: bidSession.status,
-          totalBids: allBids.length
-        }
+        sessionId: bidSession._id,
+        sessionName: bidSession.name,
+        history: history
       });
-
     } else {
-      // Get recent bid history across all sessions
-      const recentSessions = await BidSession.find({
-        status: { $in: ['completed', 'active'] }
-      })
-        .populate('participants.user', 'firstName lastName employeeId rank')
-        .populate('participants.assignedStation', 'name number')
-        .populate('participants.bidHistory.station', 'name number')
-        .sort({ updatedAt: -1 })
-        .limit(5);
-
-      const allBids = [];
-      
-      recentSessions.forEach(session => {
-        session.participants.forEach((participant, index) => {
-          participant.bidHistory.forEach(bid => {
-            allBids.push({
-              session: {
-                id: session._id,
-                name: session.name,
-                status: session.status
-              },
-              participant: {
-                name: `${participant.user.firstName} ${participant.user.lastName}`,
-                employeeId: participant.user.employeeId,
-                rank: participant.user.rank,
-                position: index + 1
-              },
-              station: bid.station,
-              shift: bid.shift,
-              position: bid.position,
-              timestamp: bid.timestamp,
-              autoAssigned: bid.autoAssigned || false
-            });
-          });
-        });
-      });
-
-      // Sort by timestamp (most recent first)
-      allBids.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-      res.status(200).json({
-        history: allBids.slice(0, parseInt(limit)),
-        sessions: recentSessions.map(session => ({
-          id: session._id,
-          name: session.name,
-          status: session.status,
-          totalBids: session.participants.reduce((sum, p) => sum + p.bidHistory.length, 0)
-        }))
-      });
+      return res.status(405).json({ error: 'Method not allowed' });
     }
 
   } catch (error) {
-    console.error('Bid history error:', error);
+    console.error('Bid session history error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

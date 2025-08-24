@@ -153,6 +153,38 @@ const bidSessionSchema = new mongoose.Schema({
     }
   },
   
+  // Session History - tracks all actions in the session
+  sessionHistory: [{
+    action: {
+      type: String,
+      enum: ['bid_submitted', 'turn_skipped', 'moved_to_back', 'auto_assigned', 'session_started', 'session_paused', 'session_resumed', 'session_completed'],
+      required: true
+    },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    userName: String,
+    station: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Station'
+    },
+    stationName: String,
+    shift: {
+      type: String,
+      enum: ['A', 'B', 'C']
+    },
+    position: {
+      type: String,
+      enum: ['Firefighter', 'Paramedic', 'EMT', 'Driver', 'Operator', 'Officer']
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    },
+    details: String
+  }],
+  
   // Created by
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -175,32 +207,47 @@ const bidSessionSchema = new mongoose.Schema({
 
 // Virtual for progress percentage
 bidSessionSchema.virtual('progressPercentage').get(function() {
-  if (this.totalParticipants === 0) return 0;
-  return Math.round((this.completedBids / this.totalParticipants) * 100);
+  try {
+    if (this.totalParticipants === 0) return 0;
+    return Math.round((this.completedBids / this.totalParticipants) * 100);
+  } catch (error) {
+    console.error('Error in progressPercentage virtual:', error);
+    return 0;
+  }
 });
 
 // Virtual for time remaining in current bid
 bidSessionSchema.virtual('currentBidTimeRemaining').get(function() {
-  if (!this.currentBidEnd) return 0;
-  
-  const now = new Date();
-  const timeRemaining = this.currentBidEnd.getTime() - now.getTime();
-  return Math.max(0, timeRemaining);
+  try {
+    if (!this.currentBidEnd) return 0;
+    
+    const now = new Date();
+    const timeRemaining = this.currentBidEnd.getTime() - now.getTime();
+    return Math.max(0, timeRemaining);
+  } catch (error) {
+    console.error('Error in currentBidTimeRemaining virtual:', error);
+    return 0;
+  }
 });
 
 // Virtual for current participant info
 bidSessionSchema.virtual('currentParticipantInfo').get(function() {
-  if (this.currentParticipant > this.participants.length || this.currentParticipant < 1) {
+  try {
+    if (this.currentParticipant > this.participants.length || this.currentParticipant < 1) {
+      return null;
+    }
+    
+    const participant = this.participants[this.currentParticipant - 1];
+    return {
+      position: participant.position,
+      user: participant.user,
+      hasBid: participant.hasBid,
+      timeWindow: participant.timeWindow
+    };
+  } catch (error) {
+    console.error('Error in currentParticipantInfo virtual:', error);
     return null;
   }
-  
-  const participant = this.participants[this.currentParticipant - 1];
-  return {
-    position: participant.position,
-    user: participant.user,
-    hasBid: participant.hasBid,
-    timeWindow: participant.timeWindow
-  };
 });
 
 // Method to add participant
@@ -229,12 +276,25 @@ bidSessionSchema.methods.startSession = function() {
     this.setCurrentParticipantTimeWindow();
   }
   
+  // Add to session history
+  this.sessionHistory.push({
+    action: 'session_started',
+    details: 'Bid session started'
+  });
+  
   return this.save();
 };
 
 // Method to pause session
 bidSessionSchema.methods.pauseSession = function() {
   this.status = 'paused';
+  
+  // Add to session history
+  this.sessionHistory.push({
+    action: 'session_paused',
+    details: 'Bid session paused'
+  });
+  
   return this.save();
 };
 
@@ -242,6 +302,13 @@ bidSessionSchema.methods.pauseSession = function() {
 bidSessionSchema.methods.resumeSession = function() {
   this.status = 'active';
   this.setCurrentParticipantTimeWindow();
+  
+  // Add to session history
+  this.sessionHistory.push({
+    action: 'session_resumed',
+    details: 'Bid session resumed'
+  });
+  
   return this.save();
 };
 
@@ -249,6 +316,13 @@ bidSessionSchema.methods.resumeSession = function() {
 bidSessionSchema.methods.completeSession = function() {
   this.status = 'completed';
   this.actualEnd = new Date();
+  
+  // Add to session history
+  this.sessionHistory.push({
+    action: 'session_completed',
+    details: 'Bid session completed'
+  });
+  
   return this.save();
 };
 
@@ -404,6 +478,16 @@ bidSessionSchema.methods.moveCurrentParticipantToBack = function() {
     this.completeSession();
   }
   
+  // Add to session history
+  this.sessionHistory.push({
+    action: 'moved_to_back',
+    userId: participant.user,
+    userName: participant.user.firstName && participant.user.lastName 
+      ? `${participant.user.firstName} ${participant.user.lastName}`
+      : 'Unknown User',
+    details: `Moved to back of queue due to time expiration`
+  });
+  
   console.log('Participant moved to back successfully');
   return this.save();
 };
@@ -437,54 +521,88 @@ bidSessionSchema.methods.processBid = async function(stationId, shift, position)
     await station.addAssignment(shift, participant.user, position);
   }
   
+  // Add to session history
+  this.sessionHistory.push({
+    action: 'bid_submitted',
+    userId: participant.user,
+    userName: participant.user.firstName && participant.user.lastName 
+      ? `${participant.user.firstName} ${participant.user.lastName}`
+      : 'Unknown User',
+    station: stationId,
+    stationName: station ? station.name : 'Unknown Station',
+    shift: shift,
+    position: position,
+    details: `Bid submitted for ${station ? station.name : 'Unknown Station'} - ${shift} Shift - ${position}`
+  });
+  
   this.advanceToNextParticipant();
   return this.save();
 };
 
 // Method to calculate available stations
 bidSessionSchema.methods.calculateAvailableStations = function() {
-  // For now, return a simple count based on the number of active stations
-  // This is a simplified version - in a real implementation, you'd check actual availability
-  return 5; // Return the number of stations we know exist
+  try {
+    // For now, return a simple count based on the number of active stations
+    // This is a simplified version - in a real implementation, you'd check actual availability
+    return 5; // Return the number of stations we know exist
+  } catch (error) {
+    console.error('Error in calculateAvailableStations:', error);
+    return 0;
+  }
+};
+
+// Method to get session history
+bidSessionSchema.methods.getSessionHistory = function() {
+  return this.sessionHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 };
 
 // Method to get session summary
 bidSessionSchema.methods.getSummary = function() {
-  // Count participants who have been moved to back
-  const movedToBackCount = this.participants.filter(p => p.movedToBack).length;
-  
-  const summary = {
-    id: this._id,
-    name: this.name,
-    year: this.year,
-    status: this.status,
-    progress: this.progressPercentage,
-    totalParticipants: this.totalParticipants,
-    participantCount: this.participants.length,
-         availableStations: this.calculateAvailableStations(),
-    completedBids: this.completedBids,
-    autoAssignments: this.autoAssignments,
-    movedToBackCount: movedToBackCount,
-    currentParticipant: this.currentParticipant,
-    scheduledStart: this.scheduledStart,
-    scheduledEnd: this.scheduledEnd,
-    participants: this.participants,
-    currentBidStart: this.currentBidStart,
-    currentBidEnd: this.currentBidEnd,
-    bidWindowDuration: this.bidWindowDuration,
-    currentParticipantInfo: this.currentParticipantInfo
-  };
-  
-  console.log('Session summary:', {
-    id: summary.id,
-    status: summary.status,
-    currentParticipant: summary.currentParticipant,
-    currentBidStart: summary.currentBidStart,
-    currentBidEnd: summary.currentBidEnd,
-    bidWindowDuration: summary.bidWindowDuration
-  });
-  
-  return summary;
+  try {
+    // Count participants who have been moved to back
+    const movedToBackCount = this.participants.filter(p => p.movedToBack).length;
+    
+    const summary = {
+      id: this._id,
+      name: this.name,
+      year: this.year,
+      status: this.status,
+      progress: this.progressPercentage,
+      totalParticipants: this.totalParticipants,
+      participantCount: this.participants.length,
+      availableStations: this.calculateAvailableStations(),
+      completedBids: this.completedBids,
+      autoAssignments: this.autoAssignments,
+      movedToBackCount: movedToBackCount,
+      currentParticipant: this.currentParticipant,
+      scheduledStart: this.scheduledStart,
+      scheduledEnd: this.scheduledEnd,
+      participants: this.participants,
+      currentBidStart: this.currentBidStart,
+      currentBidEnd: this.currentBidEnd,
+      bidWindowDuration: this.bidWindowDuration,
+      currentParticipantInfo: this.currentParticipantInfo
+    };
+    
+    console.log('Session summary:', {
+      id: summary.id,
+      status: summary.status,
+      currentParticipant: summary.currentParticipant,
+      currentBidStart: summary.currentBidStart,
+      currentBidEnd: summary.currentBidEnd,
+      bidWindowDuration: summary.bidWindowDuration
+    });
+    
+    return summary;
+  } catch (error) {
+    console.error('Error in getSummary:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    throw error;
+  }
 };
 
 // Indexes for performance

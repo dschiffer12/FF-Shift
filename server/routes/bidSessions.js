@@ -443,7 +443,7 @@ router.post('/:id/start', authenticateAdmin, async (req, res) => {
     // Emit socket notification to all participants
     if (global.io && bidSession.participants.length > 0) {
       bidSession.participants.forEach(participant => {
-        global.io.to(`user-${participant.user}`).emit('bid-session-started', {
+        global.io.to(`user_${participant.user}`).emit('bid-session-started', {
           sessionId: bidSession._id,
           sessionName: bidSession.name,
           scheduledStart: bidSession.scheduledStart,
@@ -479,7 +479,7 @@ router.post('/:id/pause', authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid session ID provided' });
     }
 
-    const bidSession = await BidSession.findById(req.params.id);
+    const bidSession = await BidSession.findById(req.params.id).populate('participants.user');
     if (!bidSession) {
       return res.status(404).json({ error: 'Bid session not found' });
     }
@@ -494,7 +494,7 @@ router.post('/:id/pause', authenticateAdmin, async (req, res) => {
     // Emit socket notification to all participants
     if (global.io && bidSession.participants.length > 0) {
       bidSession.participants.forEach(participant => {
-        global.io.to(`user-${participant.user}`).emit('bid-session-paused', {
+        global.io.to(`user_${participant.user}`).emit('bid-session-paused', {
           sessionId: bidSession._id,
           sessionName: bidSession.name
         });
@@ -507,14 +507,26 @@ router.post('/:id/pause', authenticateAdmin, async (req, res) => {
       });
     }
 
+    // Get updated session data after pausing
+    const updatedSession = await BidSession.findById(req.params.id).populate('participants.user');
+    const sessionSummary = updatedSession ? updatedSession.getSummary() : null;
+
     res.json({
       message: 'Bid session paused successfully',
-      bidSession: bidSession.getSummary()
+      bidSession: sessionSummary
     });
 
   } catch (error) {
     console.error('Pause bid session error:', error);
-    res.status(500).json({ error: 'Failed to pause bid session' });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    res.status(500).json({ 
+      error: 'Failed to pause bid session',
+      details: error.message 
+    });
   }
 });
 
@@ -527,7 +539,7 @@ router.post('/:id/resume', authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid session ID provided' });
     }
 
-    const bidSession = await BidSession.findById(req.params.id);
+    const bidSession = await BidSession.findById(req.params.id).populate('participants.user');
     if (!bidSession) {
       return res.status(404).json({ error: 'Bid session not found' });
     }
@@ -542,7 +554,7 @@ router.post('/:id/resume', authenticateAdmin, async (req, res) => {
     // Emit socket notification to all participants
     if (global.io && bidSession.participants.length > 0) {
       bidSession.participants.forEach(participant => {
-        global.io.to(`user-${participant.user}`).emit('bid-session-resumed', {
+        global.io.to(`user_${participant.user}`).emit('bid-session-resumed', {
           sessionId: bidSession._id,
           sessionName: bidSession.name
         });
@@ -555,14 +567,26 @@ router.post('/:id/resume', authenticateAdmin, async (req, res) => {
       });
     }
 
+    // Get updated session data after resuming
+    const updatedSession = await BidSession.findById(req.params.id).populate('participants.user');
+    const sessionSummary = updatedSession ? updatedSession.getSummary() : null;
+
     res.json({
       message: 'Bid session resumed successfully',
-      bidSession: bidSession.getSummary()
+      bidSession: sessionSummary
     });
 
   } catch (error) {
     console.error('Resume bid session error:', error);
-    res.status(500).json({ error: 'Failed to resume bid session' });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    res.status(500).json({ 
+      error: 'Failed to resume bid session',
+      details: error.message 
+    });
   }
 });
 

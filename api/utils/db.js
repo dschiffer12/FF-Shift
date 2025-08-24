@@ -52,9 +52,23 @@ const authenticateToken = (req) => {
   }
 };
 
+// Admin auth middleware
+const authenticateAdmin = async (req) => {
+  const decoded = authenticateToken(req);
+  const User = require('../../server/models/User');
+  const user = await User.findById(decoded.userId);
+  
+  if (!user || !user.isAdmin) {
+    throw new Error('Admin access required');
+  }
+  
+  return decoded;
+};
+
 module.exports = {
   connectDB,
   setCORSHeaders,
   handlePreflight,
-  authenticateToken
+  authenticateToken,
+  authenticateAdmin
 };

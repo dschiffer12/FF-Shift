@@ -12,11 +12,13 @@ import {
   Plus,
   Save,
   X,
-  RefreshCw
+  RefreshCw,
+  History
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import AdminTurnDisplay from '../../components/Bidding/AdminTurnDisplay';
+import BidHistory from '../../components/Bidding/BidHistory';
 import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -32,9 +34,8 @@ const BidSessionManagement = () => {
   const [showSessionDetails, setShowSessionDetails] = useState(false);
   const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
-  // eslint-disable-next-line no-unused-vars
-  const [showUserSelection, setShowUserSelection] = useState(false);
   const [currentActiveSession, setCurrentActiveSession] = useState(null);
+  const [selectedSessionForHistory, setSelectedSessionForHistory] = useState(null);
 
   const {
     register,
@@ -117,11 +118,18 @@ const BidSessionManagement = () => {
   useEffect(() => {
     fetchBidSessions();
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     filterSessions();
   }, [filterSessions]);
+
+  // Debug effect for selectedSessionForHistory
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('selectedSessionForHistory changed to:', selectedSessionForHistory);
+  }, [selectedSessionForHistory]);
 
   const handleCreateSession = async (data) => {
     try {
@@ -164,11 +172,18 @@ const BidSessionManagement = () => {
     }
 
     try {
-      await api.delete(endpoints.bidSessions.delete(sessionId));
-      setBidSessions(bidSessions.filter(session => session._id !== sessionId));
+      // eslint-disable-next-line no-console
+      console.log('Attempting to delete session:', sessionId);
+      const response = await api.delete(endpoints.bidSessions.delete(sessionId));
+      // eslint-disable-next-line no-console
+      console.log('Delete response:', response.data);
+      setBidSessions(bidSessions.filter(session => (session.id || session._id) !== sessionId));
       toast.success('Bid session deleted successfully');
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error deleting bid session:', error);
+      // eslint-disable-next-line no-console
+      console.error('Error response:', error.response?.data);
       toast.error(error.response?.data?.error || 'Failed to delete bid session');
     }
   };
@@ -186,23 +201,37 @@ const BidSessionManagement = () => {
 
   const handlePauseSession = async (sessionId) => {
     try {
-      await api.post(endpoints.bidSessions.pause(sessionId));
+      // eslint-disable-next-line no-console
+      console.log('Attempting to pause session:', sessionId);
+      const response = await api.post(endpoints.bidSessions.pause(sessionId));
+      // eslint-disable-next-line no-console
+      console.log('Pause response:', response.data);
       await fetchBidSessions(); // Refresh the list
       toast.success('Bid session paused successfully');
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error pausing bid session:', error);
-      toast.error(error.response?.data?.error || 'Failed to pause bid session');
+      // eslint-disable-next-line no-console
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.error || error.response?.data?.details || 'Failed to pause bid session');
     }
   };
 
   const handleResumeSession = async (sessionId) => {
     try {
-      await api.post(endpoints.bidSessions.resume(sessionId));
+      // eslint-disable-next-line no-console
+      console.log('Attempting to resume session:', sessionId);
+      const response = await api.post(endpoints.bidSessions.resume(sessionId));
+      // eslint-disable-next-line no-console
+      console.log('Resume response:', response.data);
       await fetchBidSessions(); // Refresh the list
       toast.success('Bid session resumed successfully');
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error resuming bid session:', error);
-      toast.error(error.response?.data?.error || 'Failed to resume bid session');
+      // eslint-disable-next-line no-console
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.error || error.response?.data?.details || 'Failed to resume bid session');
     }
   };
 
@@ -347,6 +376,22 @@ const BidSessionManagement = () => {
         </div>
         <div className="flex items-center space-x-3">
           <Button
+            onClick={() => {
+              // eslint-disable-next-line no-console
+              console.log('Test history button clicked');
+              // eslint-disable-next-line no-console
+              console.log('Setting selectedSessionForHistory to test-session-id');
+              setSelectedSessionForHistory('test-session-id');
+              // eslint-disable-next-line no-console
+              console.log('State should now be set');
+            }}
+            variant="secondary"
+            size="sm"
+          >
+            <History className="w-4 h-4 mr-2" />
+            Test History
+          </Button>
+          <Button
             onClick={() => fetchBidSessions()}
             variant="secondary"
             size="sm"
@@ -474,7 +519,20 @@ const BidSessionManagement = () => {
                     <Edit3 className="w-4 h-4" />
                   </Button>
                   <Button
-                    onClick={() => handleDeleteSession(session._id)}
+                    onClick={() => {
+                      // eslint-disable-next-line no-console
+                      console.log('History button clicked for session:', session.id || session._id);
+                      setSelectedSessionForHistory(session.id || session._id);
+                    }}
+                    variant="ghost"
+                    size="sm"
+                    className="text-blue-600 hover:text-blue-800"
+                    title="View Session History"
+                  >
+                    <History className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={() => handleDeleteSession(session.id || session._id)}
                     variant="ghost"
                     size="sm"
                     className="text-red-600 hover:text-red-800"
@@ -1012,6 +1070,78 @@ const BidSessionManagement = () => {
               </Button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Session History Modal */}
+      {selectedSessionForHistory && (
+        <div 
+          className="fixed inset-0 bg-red-500 bg-opacity-90 overflow-y-auto h-full w-full z-[9999]"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+        >
+          <div 
+            className="relative top-10 mx-auto p-5 border-4 border-yellow-400 w-full max-w-4xl shadow-2xl rounded-md bg-white"
+            style={{ backgroundColor: 'white', border: '4px solid yellow' }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-red-600">
+                🚨 MODAL TEST - Session ID: {selectedSessionForHistory} 🚨
+              </h3>
+              <Button
+                onClick={() => {
+                  // eslint-disable-next-line no-console
+                  console.log('Closing history modal');
+                  setSelectedSessionForHistory(null);
+                }}
+                variant="ghost"
+                size="sm"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+            </div>
+            
+            <div className="max-h-96 overflow-y-auto border-2 border-green-400 rounded p-4 bg-green-50">
+              <div className="text-center p-8">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">🎉 MODAL IS WORKING! 🎉</h4>
+                <p className="text-gray-600 mb-4">If you can see this, the modal is working!</p>
+                <p className="text-sm text-gray-500">Session ID: {selectedSessionForHistory}</p>
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
+                  <p className="text-blue-800">This is a test message to verify the modal is rendering correctly.</p>
+                                     <button 
+                     className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                     onClick={() => {
+                       // eslint-disable-next-line no-console
+                       console.log('Test button clicked!');
+                     }}
+                   >
+                    Test Button
+                  </button>
+                </div>
+              </div>
+              {/* Temporarily comment out BidHistory to test modal */}
+              {/* <BidHistory sessionId={selectedSessionForHistory} /> */}
+            </div>
+            
+            <div className="flex items-center justify-end pt-4">
+              <Button
+                onClick={() => {
+                  // eslint-disable-next-line no-console
+                  console.log('Closing history modal');
+                  setSelectedSessionForHistory(null);
+                }}
+                variant="secondary"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Debug info */}
+      {selectedSessionForHistory && (
+        <div className="fixed bottom-4 right-4 bg-red-500 text-white p-2 rounded z-50">
+          Debug: Modal should be visible for session {selectedSessionForHistory}
         </div>
       )}
     </div>

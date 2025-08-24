@@ -384,6 +384,14 @@ const initializeSocket = (server) => {
           return;
         }
 
+        // Add to session history
+        bidSession.sessionHistory.push({
+          action: 'turn_skipped',
+          userId: socket.user._id,
+          userName: `${socket.user.firstName} ${socket.user.lastName}`,
+          details: 'Turn skipped by user'
+        });
+
         // Mark participant as skipped
         participant.skipped = true;
         await bidSession.save();

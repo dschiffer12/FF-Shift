@@ -98,7 +98,7 @@ export const SocketProvider = ({ children }) => {
     });
 
     newSocket.on('bid-session-paused', (data) => {
-      toast.info(`Bid session "${data.sessionName}" has been paused`, {
+      toast(`Bid session "${data.sessionName}" has been paused`, {
         duration: 4000,
         action: {
           label: 'View',
@@ -145,7 +145,7 @@ export const SocketProvider = ({ children }) => {
     // Admin notification for session deletion
     newSocket.on('bid-session-deleted', (data) => {
       if (user?.isAdmin) {
-        toast.info(`Bid session "${data.sessionName}" has been deleted`, {
+        toast(`Bid session "${data.sessionName}" has been deleted`, {
           duration: 4000
         });
       }
@@ -182,7 +182,7 @@ export const SocketProvider = ({ children }) => {
 
     // Turn management events
     newSocket.on('turn-starting-soon', (data) => {
-      toast.info(`Your turn is starting in ${data.countdown} minutes`, {
+      toast(`Your turn is starting in ${data.countdown} minutes`, {
         duration: 10000,
         action: {
           label: 'Join Now',
@@ -218,7 +218,7 @@ export const SocketProvider = ({ children }) => {
         });
       } else {
         // Notify other users that someone's turn has started
-        toast.info(`${data.userName}'s turn has started`, {
+        toast(`${data.userName}'s turn has started`, {
           duration: 4000,
           action: {
             label: 'Watch Session',
@@ -245,7 +245,7 @@ export const SocketProvider = ({ children }) => {
       if (data.userId === user?._id) {
         toast.success(`Your bid for ${data.station} - ${data.shift} shift has been submitted successfully!`);
       } else {
-        toast.info(`${data.userName} submitted a bid for ${data.station} - ${data.shift} shift`);
+        toast(`${data.userName} submitted a bid for ${data.station} - ${data.shift} shift`);
       }
     });
 
@@ -259,7 +259,7 @@ export const SocketProvider = ({ children }) => {
 
     // Auto-assignment events
     newSocket.on('auto-assignment', (data) => {
-      toast.info(`Auto-assigned to ${data.station} - ${data.shift} shift`);
+      toast(`Auto-assigned to ${data.station} - ${data.shift} shift`);
     });
 
     // Error events
