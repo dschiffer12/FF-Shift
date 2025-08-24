@@ -33,17 +33,16 @@ router.get('/', authenticateToken, async (req, res) => {
 // Get current/active bid session
 router.get('/current', authenticateToken, async (req, res) => {
   try {
-    const activeSession = await BidSession.findOne({
-      status: { $in: ['active', 'waiting'] }
+    const activeSessions = await BidSession.find({
+      status: { $in: ['active', 'paused', 'scheduled'] }
     }).populate('participants.user', 'firstName lastName rank position employeeId')
       .populate('participants.assignedStation', 'name number')
-      .populate('createdBy', 'firstName lastName');
+      .populate('createdBy', 'firstName lastName')
+      .sort({ createdAt: -1 });
 
-    if (!activeSession) {
-      return res.status(200).json({ session: null });
-    }
+    const sessions = activeSessions.map(session => session.getSummary());
 
-    res.json({ session: activeSession });
+    res.json({ sessions });
   } catch (error) {
     console.error('Get current bid session error:', error);
     res.status(500).json({ error: 'Failed to get current bid session' });
@@ -673,8 +672,8 @@ router.post('/:id/move-to-back', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Check time expiration for current participant (admin only)
-router.post('/:id/check-time-expiration', authenticateAdmin, async (req, res) => {
+// Check time expiration for current participant
+router.post('/:id/check-time-expiration', authenticateToken, async (req, res) => {
   try {
     const bidSession = await BidSession.findById(req.params.id);
     
@@ -697,6 +696,26 @@ router.post('/:id/check-time-expiration', authenticateAdmin, async (req, res) =>
           completedBids: bidSession.completedBids,
           status: bidSession.status,
           message: 'Participant moved to back due to time expiration'
+        });
+        
+        // Emit session update to refresh client data
+        global.io.emit('session-updated', {
+          sessionId: bidSession._id,
+          session: bidSession.getSummary()
+        });
+        
+        // Emit to specific session room
+        global.io.to(`bid_session_${bidSession._id}`).emit('turn-updated', {
+          sessionId: bidSession._id,
+          currentParticipant: bidSession.currentParticipant,
+          completedBids: bidSession.completedBids,
+          status: bidSession.status,
+          message: 'Participant moved to back due to time expiration'
+        });
+        
+        global.io.to(`bid_session_${bidSession._id}`).emit('session-updated', {
+          sessionId: bidSession._id,
+          session: bidSession.getSummary()
         });
       }
     }

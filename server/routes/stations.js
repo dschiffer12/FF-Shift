@@ -260,6 +260,23 @@ router.put('/:id/positions', [
   }
 });
 
+// Get available stations
+router.get('/available', authenticateToken, async (req, res) => {
+  try {
+    const stations = await Station.find({ isActive: true })
+      .populate('currentAssignments.A.user', 'firstName lastName rank position')
+      .populate('currentAssignments.B.user', 'firstName lastName rank position')
+      .populate('currentAssignments.C.user', 'firstName lastName rank position');
+
+    const stationSummaries = stations.map(station => station.getSummary());
+
+    res.json({ stations: stationSummaries });
+  } catch (error) {
+    console.error('Get available stations error:', error);
+    res.status(500).json({ error: 'Failed to get available stations' });
+  }
+});
+
 // Get stations with available positions
 router.get('/available/positions', authenticateToken, async (req, res) => {
   try {

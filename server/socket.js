@@ -69,7 +69,79 @@ const initializeSocket = (server) => {
       });
     });
 
-    // Join bid session room
+    // Handle automatic joining of users when added by admin
+    socket.on('auto_join_bid_session', async (data) => {
+      try {
+        const { sessionId } = data;
+        await socket.emit('join_bid_session', { sessionId });
+      } catch (error) {
+        console.error('Auto join bid session error:', error);
+        socket.emit('error', { message: 'Failed to auto-join bid session' });
+      }
+    });
+
+    // Join bid session room (new format)
+    socket.on('join_bid_session', async (data) => {
+      try {
+        const sessionId = typeof data === 'string' ? data : data.sessionId;
+        console.log('Joining user to bid session:', sessionId);
+        
+        const bidSession = await BidSession.findById(sessionId)
+          .populate('participants.user', 'firstName lastName rank position')
+          .populate('participants.assignedStation', 'name number');
+
+        if (!bidSession) {
+          console.log('Bid session not found:', sessionId);
+          socket.emit('error', { message: 'Bid session not found' });
+          return;
+        }
+
+        // Join session room
+        socket.join(`bid_session_${sessionId}`);
+        console.log('User joined room:', `bid_session_${sessionId}`);
+
+        // Send session info to user
+        socket.emit('bid_session_joined', {
+          session: bidSession.getSummary(),
+          currentParticipant: bidSession.currentParticipantInfo,
+          participants: bidSession.participants.map(p => ({
+            id: p.user._id,
+            name: `${p.user.firstName} ${p.user.lastName}`,
+            rank: p.user.rank,
+            position: p.user.position,
+            bidPosition: p.position,
+            hasBid: p.hasBid,
+            assignedStation: p.assignedStation,
+            assignedShift: p.assignedShift,
+            autoAssigned: p.autoAssigned
+          }))
+        });
+
+        // Notify others in session
+        socket.to(`bid_session_${sessionId}`).emit('user_joined_session', {
+          user: {
+            id: socket.user._id,
+            name: `${socket.user.firstName} ${socket.user.lastName}`,
+            rank: socket.user.rank,
+            position: socket.user.position
+          }
+        });
+
+        // Emit user activity to admin room
+        io.to('admin_room').emit('user-activity', {
+          type: 'session',
+          userName: `${socket.user.firstName} ${socket.user.lastName}`,
+          action: `Joined bid session`,
+          timestamp: new Date(),
+          isOnline: true
+        });
+      } catch (error) {
+        console.error('Join bid session error:', error);
+        socket.emit('error', { message: 'Failed to join bid session' });
+      }
+    });
+
+    // Join bid session room (old format - keep for compatibility)
     socket.on('join-bid-session', (data) => {
       socket.join(`bid-session-${data.sessionId}`);
       console.log(`User ${socket.user.email} joined bid session: ${data.sessionId}`);
@@ -98,7 +170,131 @@ const initializeSocket = (server) => {
       }
     });
 
-    // Submit bid
+    // Submit bid (new format)
+    socket.on('submit_bid', async (data) => {
+      try {
+        console.log('Received bid submission:', data);
+        console.log('User submitting bid:', socket.user.email);
+        const { sessionId, stationId, shift, position } = data;
+
+        const bidSession = await BidSession.findById(sessionId);
+        if (!bidSession) {
+          socket.emit('error', { message: 'Bid session not found' });
+          return;
+        }
+
+        // Check if user is in the bid session room
+        const userRooms = Array.from(socket.rooms);
+        console.log('User rooms:', userRooms);
+        console.log('Required room:', `bid_session_${sessionId}`);
+        console.log('User authenticated:', !!socket.user);
+        console.log('User ID:', socket.user._id);
+        if (!userRooms.includes(`bid_session_${sessionId}`)) {
+          console.log('User not in bid session room');
+          socket.emit('error', { message: 'You must join the bid session first' });
+          return;
+        }
+
+        // Check if user is a participant in this session
+        const isParticipant = bidSession.participants.some(p => p.user.toString() === socket.user._id.toString());
+        console.log('User is participant:', isParticipant);
+        console.log('Session participants:', bidSession.participants.map(p => ({ userId: p.user.toString(), name: p.user.firstName })));
+        if (!isParticipant) {
+          socket.emit('error', { message: 'You are not a participant in this session' });
+          return;
+        }
+
+        // Check if user is current participant
+        const currentParticipant = bidSession.participants[bidSession.currentParticipant - 1]; // Convert to 0-based index
+        console.log('Current participant:', currentParticipant ? { userId: currentParticipant.user.toString(), name: currentParticipant.user.firstName } : 'None');
+        console.log('Current participant index:', bidSession.currentParticipant);
+        if (!currentParticipant || currentParticipant.user.toString() !== socket.user._id.toString()) {
+          socket.emit('error', { message: 'Not your turn to bid' });
+          return;
+        }
+
+        // Check if user can still bid
+        const participant = bidSession.participants[bidSession.currentParticipant - 1]; // Convert to 0-based index
+        console.log('Participant time window:', participant?.timeWindow);
+        if (!participant || !participant.timeWindow || !participant.timeWindow.end) {
+          console.log('No active bid window');
+          socket.emit('error', { message: 'No active bid window' });
+          return;
+        }
+        
+        const now = new Date();
+        console.log('Current time:', now);
+        console.log('Bid window end:', participant.timeWindow.end);
+        console.log('Time expired:', now > participant.timeWindow.end);
+        if (now > participant.timeWindow.end) {
+          socket.emit('error', { message: 'Bid window has expired' });
+          return;
+        }
+
+        // Validate station and position availability
+        const Station = require('./models/Station');
+        const station = await Station.findById(stationId);
+        console.log('Found station:', station ? station.name : 'Not found');
+        if (!station) {
+          socket.emit('error', { message: 'Station not found' });
+          return;
+        }
+
+        console.log('Checking position availability:', { shift, position, stationId });
+        console.log('Station available positions:', station.availablePositions);
+        console.log('Station current assignments:', station.currentAssignments);
+        
+        const positionAvailable = station.hasAvailablePosition(shift, position);
+        console.log('Position available:', positionAvailable);
+        
+        if (!positionAvailable) {
+          console.log('Position not available');
+          socket.emit('error', { message: 'Position not available at this station' });
+          return;
+        }
+
+        // Process the bid
+        console.log('Processing bid...');
+        await bidSession.processBid(stationId, shift, position);
+        console.log('Bid processed successfully');
+
+        // Get updated station info for confirmation
+        const updatedStation = await Station.findById(stationId);
+
+        // Broadcast bid result to session
+        io.to(`bid_session_${sessionId}`).emit('bid_submitted', {
+          userId: socket.user._id,
+          userName: `${socket.user.firstName} ${socket.user.lastName}`,
+          station: updatedStation.getSummary(),
+          shift,
+          position,
+          nextParticipant: bidSession.currentParticipantInfo
+        });
+
+        // Send confirmation to bidder
+        console.log('Sending bid confirmation to user');
+        socket.emit('bid_confirmed', {
+          station: updatedStation.getSummary(),
+          shift,
+          position
+        });
+
+        // Emit user activity to admin room
+        io.to('admin_room').emit('user-activity', {
+          type: 'bid',
+          userName: `${socket.user.firstName} ${socket.user.lastName}`,
+          action: `Submitted bid for station`,
+          timestamp: new Date(),
+          isOnline: true
+        });
+
+      } catch (error) {
+        console.error('Submit bid error:', error);
+        socket.emit('error', { message: 'Failed to submit bid' });
+      }
+    });
+
+    // Submit bid (old format - keep for compatibility)
     socket.on('submit-bid', async (data) => {
       try {
         const { sessionId, bidData } = data;

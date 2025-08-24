@@ -6,13 +6,12 @@ import {
   Play,
   Pause,
   Timer,
-  SkipForward,
   RotateCcw,
   Eye
 } from 'lucide-react';
 import Button from '../UI/Button';
 
-const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession, onAutoAssign }) => {
+const AdminTurnDisplay = ({ session, onPauseSession, onResumeSession, onAutoAssign }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isCheckingExpiration, setIsCheckingExpiration] = useState(false);
@@ -102,13 +101,6 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
     return 'bg-green-100';
   };
 
-  const handleSkipTurn = () => {
-    if (onSkipTurn && currentParticipant) {
-      const userId = currentParticipant.user.id || currentParticipant.user._id;
-      onSkipTurn(session.id || session._id, userId);
-    }
-  };
-
   const handleAutoAssign = () => {
     if (onAutoAssign && currentParticipant) {
       const userId = currentParticipant.user.id || currentParticipant.user._id;
@@ -173,28 +165,19 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
               </div>
             </div>
             
-            {/* Admin Controls */}
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Button
-                  onClick={handleSkipTurn}
-                  variant="secondary"
-                  size="sm"
-                  className="text-orange-600 hover:text-orange-800"
-                >
-                  <SkipForward className="w-4 h-4 mr-1" />
-                  Skip Turn
-                </Button>
-                <Button
-                  onClick={handleAutoAssign}
-                  variant="secondary"
-                  size="sm"
-                  className="text-purple-600 hover:text-purple-800"
-                >
-                  <RotateCcw className="w-4 h-4 mr-1" />
-                  Move to Back
-                </Button>
-              </div>
+                         {/* Admin Controls */}
+             <div className="mt-4 flex items-center justify-between">
+               <div className="flex items-center space-x-2">
+                 <Button
+                   onClick={handleAutoAssign}
+                   variant="secondary"
+                   size="sm"
+                   className="text-purple-600 hover:text-purple-800"
+                 >
+                   <RotateCcw className="w-4 h-4 mr-1" />
+                   Move to Back
+                 </Button>
+               </div>
               <div className="flex items-center space-x-2">
                                  {session.status === 'active' ? (
                    <Button

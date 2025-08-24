@@ -71,6 +71,54 @@ app.get('/api/health', (req, res) => {
 const io = initializeSocket(server);
 global.io = io;
 
+// Background task to check for timer expiration every 30 seconds
+const BidSession = require('./models/BidSession');
+setInterval(async () => {
+  try {
+    // Find all active bid sessions
+    const activeSessions = await BidSession.find({ status: 'active' });
+    
+    for (const session of activeSessions) {
+      const timeExpired = await session.checkTimeExpiration();
+      
+      if (timeExpired) {
+        console.log(`Timer expired for session ${session._id}, participant moved to back`);
+        
+        // Emit turn update to all connected clients
+        io.emit('turn-updated', {
+          sessionId: session._id,
+          currentParticipant: session.currentParticipant,
+          completedBids: session.completedBids,
+          status: session.status,
+          message: 'Participant moved to back due to time expiration'
+        });
+        
+        // Emit to specific session room
+        io.to(`bid_session_${session._id}`).emit('turn-updated', {
+          sessionId: session._id,
+          currentParticipant: session.currentParticipant,
+          completedBids: session.completedBids,
+          status: session.status,
+          message: 'Participant moved to back due to time expiration'
+        });
+        
+        // Emit session update to refresh client data
+        io.emit('session-updated', {
+          sessionId: session._id,
+          session: session.getSummary()
+        });
+        
+        io.to(`bid_session_${session._id}`).emit('session-updated', {
+          sessionId: session._id,
+          session: session.getSummary()
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error in timer expiration check:', error);
+  }
+}, 30000); // Check every 30 seconds
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

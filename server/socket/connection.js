@@ -25,8 +25,9 @@ const handleSocketConnection = (socket, io) => {
   }
 
   // Handle user joining bid session
-  socket.on('join_bid_session', async (sessionId) => {
+  socket.on('join_bid_session', async (data) => {
     try {
+      const sessionId = typeof data === 'string' ? data : data.sessionId;
       await joinUserToBidSession(socket, sessionId, io);
     } catch (error) {
       console.error('Join bid session error:', error);
@@ -62,6 +63,7 @@ const handleSocketConnection = (socket, io) => {
   // Handle bid submission
   socket.on('submit_bid', async (data) => {
     try {
+      console.log('Received bid submission:', data);
       const { sessionId, stationId, shift, position } = data;
 
       const bidSession = await BidSession.findById(sessionId);
@@ -70,15 +72,39 @@ const handleSocketConnection = (socket, io) => {
         return;
       }
 
+      // Check if user is in the bid session room
+      const userRooms = Array.from(socket.rooms);
+      console.log('User rooms:', userRooms);
+      console.log('Required room:', `bid_session_${sessionId}`);
+      if (!userRooms.includes(`bid_session_${sessionId}`)) {
+        console.log('User not in bid session room');
+        socket.emit('error', { message: 'You must join the bid session first' });
+        return;
+      }
+
+      // Check if user is a participant in this session
+      const isParticipant = bidSession.participants.some(p => p.user.toString() === socket.user._id.toString());
+      if (!isParticipant) {
+        socket.emit('error', { message: 'You are not a participant in this session' });
+        return;
+      }
+
       // Check if user is current participant
-      const currentParticipant = bidSession.participants[bidSession.currentParticipant];
+      const currentParticipant = bidSession.participants[bidSession.currentParticipant - 1]; // Convert to 0-based index
       if (!currentParticipant || currentParticipant.user.toString() !== socket.user._id.toString()) {
         socket.emit('error', { message: 'Not your turn to bid' });
         return;
       }
 
       // Check if user can still bid
-      if (!bidSession.participants[bidSession.currentParticipant].canBid()) {
+      const participant = bidSession.participants[bidSession.currentParticipant - 1]; // Convert to 0-based index
+      if (!participant || !participant.timeWindow || !participant.timeWindow.end) {
+        socket.emit('error', { message: 'No active bid window' });
+        return;
+      }
+      
+      const now = new Date();
+      if (now > participant.timeWindow.end) {
         socket.emit('error', { message: 'Bid window has expired' });
         return;
       }
@@ -86,11 +112,16 @@ const handleSocketConnection = (socket, io) => {
       // Validate station and position availability
       const station = await Station.findById(stationId);
       if (!station) {
+        console.log('Station not found:', stationId);
         socket.emit('error', { message: 'Station not found' });
         return;
       }
 
+      console.log('Checking position availability:', { shift, position, stationId });
+      console.log('Station available positions:', station.availablePositions);
+      
       if (!station.hasAvailablePosition(shift, position)) {
+        console.log('Position not available:', { shift, position });
         socket.emit('error', { message: 'Position not available at this station' });
         return;
       }
@@ -112,6 +143,7 @@ const handleSocketConnection = (socket, io) => {
       });
 
       // Send confirmation to bidder
+      console.log('Sending bid confirmation to user');
       socket.emit('bid_confirmed', {
         station: station.getSummary(),
         shift,
@@ -321,17 +353,21 @@ const handleSocketConnection = (socket, io) => {
 
 // Helper function to join user to bid session
 const joinUserToBidSession = async (socket, sessionId, io) => {
+  console.log('Joining user to bid session:', sessionId);
+  
   const bidSession = await BidSession.findById(sessionId)
     .populate('participants.user', 'firstName lastName rank position')
     .populate('participants.assignedStation', 'name number');
 
   if (!bidSession) {
+    console.log('Bid session not found:', sessionId);
     socket.emit('error', { message: 'Bid session not found' });
     return;
   }
 
   // Join session room
   socket.join(`bid_session_${sessionId}`);
+  console.log('User joined room:', `bid_session_${sessionId}`);
   
   // Store room info
   if (!bidSessionRooms.has(sessionId)) {

@@ -206,17 +206,6 @@ const BidSessionManagement = () => {
     }
   };
 
-  const handleSkipTurn = async (sessionId, userId) => {
-    try {
-      await api.post(`/api/bid-sessions/${sessionId}/skip-turn`, { userId });
-      await fetchBidSessions(); // Refresh the list
-      toast.success('Turn skipped successfully');
-    } catch (error) {
-      console.error('Error skipping turn:', error);
-      toast.error(error.response?.data?.error || 'Failed to skip turn');
-    }
-  };
-
   const handleMoveToBack = async (sessionId, userId) => {
     try {
       await api.post(`/api/bid-sessions/${sessionId}/move-to-back`, { userId });
@@ -376,16 +365,15 @@ const BidSessionManagement = () => {
         </div>
       </div>
 
-      {/* Active Session Turn Display */}
-      {currentActiveSession && (
-        <AdminTurnDisplay 
-          session={currentActiveSession}
-          onSkipTurn={handleSkipTurn}
-          onPauseSession={handlePauseSession}
-          onResumeSession={handleResumeSession}
-          onAutoAssign={handleMoveToBack}
-        />
-      )}
+             {/* Active Session Turn Display */}
+       {currentActiveSession && (
+         <AdminTurnDisplay 
+           session={currentActiveSession}
+           onPauseSession={handlePauseSession}
+           onResumeSession={handleResumeSession}
+           onAutoAssign={handleMoveToBack}
+         />
+       )}
 
       {/* Search and Filters */}
       <div className="card">

@@ -70,7 +70,10 @@ const Dashboard = () => {
   const fetchCurrentBidSession = async () => {
     try {
       const response = await api.get(endpoints.bidSessions.current);
-      setCurrentBidSession(response.data.session || null);
+      // The endpoint returns { sessions: [...] }, so we need to find the active one
+      const sessions = response.data.sessions || [];
+      const activeSession = sessions.find(s => s.status === 'active' || s.status === 'paused');
+      setCurrentBidSession(activeSession || null);
     } catch (error) {
       console.error('Error fetching current bid session:', error);
     }
@@ -155,7 +158,7 @@ const Dashboard = () => {
       icon: Award,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
-      change: '+2 years',
+      change: user?.yearsOfService ? `+${user.yearsOfService} years` : '+0 years',
       changeType: 'positive'
     },
     {
@@ -176,7 +179,7 @@ const Dashboard = () => {
     },
     {
       name: 'Bid Priority',
-      value: user?.bidPriority || 0,
+      value: user?.bidPriority || 'N/A',
       icon: TrendingUp,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
@@ -203,7 +206,7 @@ const Dashboard = () => {
                 Welcome back, {user?.firstName}!
               </h1>
               <p className="mt-2 text-primary-100">
-                {user?.rank} • {user?.position} • Employee #{user?.employeeId}
+                {user?.rank || 'N/A'} • {user?.position || 'N/A'} • Employee #{user?.employeeId || 'N/A'}
               </p>
               <div className="mt-4 flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
@@ -239,10 +242,10 @@ const Dashboard = () => {
               </div>
               <div>
                 <h3 className="font-medium text-yellow-900">
-                  Active Bid Session: {currentBidSession.name}
+                  Active Bid Session: {currentBidSession.name || 'Unnamed Session'}
                 </h3>
                 <p className="text-sm text-yellow-700">
-                  {currentBidSession.description}
+                  {currentBidSession.description || 'No description available'}
                 </p>
               </div>
             </div>
@@ -351,7 +354,7 @@ const Dashboard = () => {
                         currentBidSession.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'
                       }`}></div>
                       <span className="font-medium text-gray-900">
-                        {currentBidSession.name}
+                        {currentBidSession.name || 'Unnamed Session'}
                       </span>
                     </div>
                     <div className={`px-2 py-1 text-xs font-medium rounded-full ${getBidStatusColor(currentBidSession.status)}`}>
@@ -368,23 +371,23 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <span className="text-gray-600">Participants:</span>
-                      <span className="ml-2 font-medium">{currentBidSession.participantCount || 0}</span>
+                      <span className="ml-2 font-medium">{currentBidSession.participantCount || currentBidSession.participants?.length || 0}</span>
                     </div>
                     <div>
                       <span className="text-gray-600">Time Limit:</span>
-                      <span className="ml-2 font-medium">{formatTime(currentBidSession.bidTimeLimit)}</span>
+                      <span className="ml-2 font-medium">{formatTime((currentBidSession.bidWindowDuration || 5) * 60)}</span>
                     </div>
                     <div>
                       <span className="text-gray-600">Session Period:</span>
                       <span className="ml-2 font-medium">
-                        {new Date(currentBidSession.startDate).toLocaleDateString()} - {new Date(currentBidSession.endDate).toLocaleDateString()}
+                        {currentBidSession.scheduledStart ? new Date(currentBidSession.scheduledStart).toLocaleDateString() : 'N/A'} - {currentBidSession.scheduledEnd ? new Date(currentBidSession.scheduledEnd).toLocaleDateString() : 'N/A'}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between pt-4 border-t">
                     <p className="text-sm text-gray-600">
-                      {currentBidSession.description}
+                      {currentBidSession.description || 'No description available'}
                     </p>
                     <Button
                       onClick={() => navigate('/bid-interface')}

@@ -294,7 +294,15 @@ router.get('/me', authenticateToken, async (req, res) => {
       .populate('currentStation', 'name number')
       .populate('assignedStation', 'name number');
 
-    res.json({ user });
+    // Add virtual properties to the response
+    const userWithVirtuals = {
+      ...user.toObject(),
+      seniorityScore: user.seniorityScore,
+      fullName: user.fullName,
+      bidPriority: user.bidPriority
+    };
+
+    res.json({ user: userWithVirtuals });
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ error: 'Failed to get user information' });

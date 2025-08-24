@@ -8,36 +8,79 @@ import {
   Pause,
   Timer
 } from 'lucide-react';
+import api from '../../services/api';
 
 const TurnDisplay = ({ session, currentUser }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [timeRemaining, setTimeRemaining] = useState(0);
 
-  // Update current time every second
+  // Debug logging
+  useEffect(() => {
+    console.log('TurnDisplay - Session:', session);
+    console.log('TurnDisplay - CurrentBidEnd:', session?.currentBidEnd);
+    console.log('TurnDisplay - Status:', session?.status);
+  }, [session]);
+
+  // Update current time every second and check for timer expiration
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, []);
+    // Check for timer expiration every 10 seconds
+    const expirationTimer = setInterval(() => {
+      if (session?.status === 'active' && session?.currentBidEnd) {
+        const endTime = new Date(session.currentBidEnd);
+        const now = new Date();
+        if (now > endTime) {
+          checkTimeExpiration();
+        }
+      }
+    }, 10000);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(expirationTimer);
+    };
+  }, [session?.status, session?.currentBidEnd]);
 
   // Calculate time remaining for current bid
   useEffect(() => {
-    if (session?.currentBidEnd) {
-      const remaining = new Date(session.currentBidEnd) - currentTime;
+    if (session?.currentBidEnd && (session.status === 'active' || session.status === 'paused')) {
+      const endTime = new Date(session.currentBidEnd);
+      const remaining = endTime.getTime() - currentTime.getTime();
       setTimeRemaining(Math.max(0, remaining));
+      
+      // Check for timer expiration when time reaches zero
+      if (remaining <= 0 && session.status === 'active') {
+        checkTimeExpiration();
+      }
+    } else if (session?.status === 'active' && session?.bidWindowDuration) {
+      // Fallback: if no currentBidEnd is set but session is active, show a default countdown
+      const defaultDuration = session.bidWindowDuration * 60 * 1000; // Convert minutes to milliseconds
+      setTimeRemaining(defaultDuration);
     } else {
       setTimeRemaining(0);
     }
-  }, [session?.currentBidEnd, currentTime]);
+  }, [session?.currentBidEnd, session?.status, session?.bidWindowDuration, currentTime]);
 
-  if (!session || session.status !== 'active') {
+  // Function to check for timer expiration
+  const checkTimeExpiration = async () => {
+    try {
+      console.log('Checking for timer expiration...');
+      const response = await api.post(`/api/bid-sessions/${session.id || session._id}/check-time-expiration`);
+      console.log('Timer expiration check response:', response.data);
+    } catch (error) {
+      console.error('Error checking timer expiration:', error);
+    }
+  };
+
+  if (!session || (session.status !== 'active' && session.status !== 'paused')) {
     return null;
   }
 
-  const currentParticipant = session.participants?.find(p => p.position === session.currentParticipant);
-  const nextParticipant = session.participants?.find(p => p.position === session.currentParticipant + 1);
+  const currentParticipant = session.participants?.find(p => p.position === session.currentParticipant - 1);
+  const nextParticipant = session.participants?.find(p => p.position === session.currentParticipant);
   const isCurrentUserTurn = currentParticipant?.user?.id === currentUser?._id || currentParticipant?.user?._id === currentUser?._id;
   const isNextUserTurn = nextParticipant?.user?.id === currentUser?._id || nextParticipant?.user?._id === currentUser?._id;
 
@@ -63,11 +106,20 @@ const TurnDisplay = ({ session, currentUser }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+    <div className={`rounded-lg border p-6 shadow-sm ${
+      isCurrentUserTurn 
+        ? 'bg-gradient-to-r from-blue-50 to-green-50 border-blue-300 shadow-lg' 
+        : 'bg-white border-gray-200'
+    }`}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 flex items-center">
           <Play className="w-5 h-5 mr-2 text-green-600" />
           Active Bidding Session
+          {isCurrentUserTurn && (
+            <span className="ml-3 px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full animate-pulse">
+              YOUR TURN!
+            </span>
+          )}
         </h3>
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-500">Session:</span>
@@ -87,6 +139,9 @@ const TurnDisplay = ({ session, currentUser }) => {
             <span className={`font-mono font-bold text-lg ${getTimeRemainingColor()}`}>
               {formatTime(timeRemaining)}
             </span>
+            {!session?.currentBidEnd && session?.status === 'active' && (
+              <span className="text-xs text-gray-500">(Default)</span>
+            )}
           </div>
         </div>
 
@@ -113,9 +168,22 @@ const TurnDisplay = ({ session, currentUser }) => {
               </div>
               <div className="text-right">
                 {isCurrentUserTurn && (
-                  <div className="flex items-center space-x-1 text-blue-600">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="text-sm font-medium">Your Turn!</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1 text-blue-600">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="text-sm font-medium">Your Turn!</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        // This will be handled by the parent component
+                        window.dispatchEvent(new CustomEvent('openBidModal', { 
+                          detail: { session } 
+                        }));
+                      }}
+                      className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
+                    >
+                      Bid Now
+                    </button>
                   </div>
                 )}
                 <p className="text-sm text-gray-500">

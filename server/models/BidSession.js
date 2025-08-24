@@ -179,12 +179,6 @@ bidSessionSchema.virtual('progressPercentage').get(function() {
   return Math.round((this.completedBids / this.totalParticipants) * 100);
 });
 
-// Virtual for current participant info
-bidSessionSchema.virtual('currentParticipantInfo').get(function() {
-  if (this.currentParticipant >= this.participants.length) return null;
-  return this.participants[this.currentParticipant];
-});
-
 // Virtual for time remaining in current bid
 bidSessionSchema.virtual('currentBidTimeRemaining').get(function() {
   if (!this.currentBidEnd) return 0;
@@ -269,6 +263,13 @@ bidSessionSchema.methods.setCurrentParticipantTimeWindow = function() {
   // Convert to 0-based index for array access
   const participantIndex = this.currentParticipant - 1;
   
+  console.log(`Setting time window for participant ${this.currentParticipant}:`, {
+    startTime: startTime.toISOString(),
+    endTime: endTime.toISOString(),
+    duration: this.bidWindowDuration,
+    participantIndex
+  });
+  
   this.participants[participantIndex].timeWindow = {
     start: startTime,
     end: endTime
@@ -327,7 +328,10 @@ bidSessionSchema.methods.checkSessionCompletion = function() {
 
 // Method to check if current participant's time has expired and move them to back
 bidSessionSchema.methods.checkTimeExpiration = function() {
+  console.log(`Checking time expiration for session ${this._id}, status: ${this.status}, currentParticipant: ${this.currentParticipant}`);
+  
   if (this.status !== 'active' || this.currentParticipant > this.participants.length || this.currentParticipant < 1) {
+    console.log('Session not active or invalid current participant');
     return false;
   }
   
@@ -335,13 +339,17 @@ bidSessionSchema.methods.checkTimeExpiration = function() {
   const participant = this.participants[participantIndex];
   
   if (!participant.timeWindow || !participant.timeWindow.end) {
+    console.log('No time window set for current participant');
     return false;
   }
   
   const now = new Date();
   const timeExpired = now > participant.timeWindow.end;
   
+  console.log(`Current time: ${now}, End time: ${participant.timeWindow.end}, Time expired: ${timeExpired}, Has bid: ${participant.hasBid}`);
+  
   if (timeExpired && !participant.hasBid) {
+    console.log('Time expired and no bid made, moving participant to back');
     // Time has expired and participant hasn't made a bid, move them to back
     this.moveCurrentParticipantToBack();
     return true;
@@ -352,10 +360,17 @@ bidSessionSchema.methods.checkTimeExpiration = function() {
 
 // Method to move current participant to back of queue
 bidSessionSchema.methods.moveCurrentParticipantToBack = function() {
-  if (this.currentParticipant > this.participants.length || this.currentParticipant < 1) return;
+  console.log(`Moving participant to back for session ${this._id}, currentParticipant: ${this.currentParticipant}`);
+  
+  if (this.currentParticipant > this.participants.length || this.currentParticipant < 1) {
+    console.log('Invalid current participant index');
+    return;
+  }
   
   const participantIndex = this.currentParticipant - 1;
   const participant = this.participants[participantIndex];
+  
+  console.log(`Moving participant ${participant.user} to back of queue`);
   
   // Mark participant as moved to back and increment attempts
   participant.movedToBack = true;
@@ -381,17 +396,20 @@ bidSessionSchema.methods.moveCurrentParticipantToBack = function() {
   
   if (nextParticipantIndex !== -1) {
     this.currentParticipant = nextParticipantIndex + 1; // Convert to 1-based indexing
+    console.log(`Next participant set to: ${this.currentParticipant}`);
     this.setCurrentParticipantTimeWindow();
   } else {
     // All participants have either bid or exceeded max attempts
+    console.log('All participants handled, completing session');
     this.completeSession();
   }
   
+  console.log('Participant moved to back successfully');
   return this.save();
 };
 
 // Method to process bid
-bidSessionSchema.methods.processBid = function(stationId, shift, position) {
+bidSessionSchema.methods.processBid = async function(stationId, shift, position) {
   if (this.currentParticipant > this.participants.length || this.currentParticipant < 1) {
     throw new Error('No current participant');
   }
@@ -412,6 +430,13 @@ bidSessionSchema.methods.processBid = function(stationId, shift, position) {
   participant.assignedPosition = position;
   participant.hasBid = true;
   
+  // Update station assignment
+  const Station = require('./Station');
+  const station = await Station.findById(stationId);
+  if (station) {
+    await station.addAssignment(shift, participant.user, position);
+  }
+  
   this.advanceToNextParticipant();
   return this.save();
 };
@@ -421,13 +446,15 @@ bidSessionSchema.methods.getSummary = function() {
   // Count participants who have been moved to back
   const movedToBackCount = this.participants.filter(p => p.movedToBack).length;
   
-  return {
+  const summary = {
     id: this._id,
     name: this.name,
     year: this.year,
     status: this.status,
     progress: this.progressPercentage,
     totalParticipants: this.totalParticipants,
+    participantCount: this.participants.length,
+    availableStations: 0, // TODO: Calculate available stations
     completedBids: this.completedBids,
     autoAssignments: this.autoAssignments,
     movedToBackCount: movedToBackCount,
@@ -440,6 +467,17 @@ bidSessionSchema.methods.getSummary = function() {
     bidWindowDuration: this.bidWindowDuration,
     currentParticipantInfo: this.currentParticipantInfo
   };
+  
+  console.log('Session summary:', {
+    id: summary.id,
+    status: summary.status,
+    currentParticipant: summary.currentParticipant,
+    currentBidStart: summary.currentBidStart,
+    currentBidEnd: summary.currentBidEnd,
+    bidWindowDuration: summary.bidWindowDuration
+  });
+  
+  return summary;
 };
 
 // Indexes for performance

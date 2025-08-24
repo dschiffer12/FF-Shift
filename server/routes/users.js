@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const BidSession = require('../models/BidSession');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -188,27 +189,58 @@ router.put('/change-password', [
 // Get user's bid history
 router.get('/bid-history', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id)
-      .populate({
-        path: 'currentBidSession',
-        populate: {
-          path: 'participants.user',
-          select: 'firstName lastName rank position'
-        }
-      });
+    // Find all bid sessions where the user is a participant
+    const bidSessions = await BidSession.find({
+      'participants.user': req.user._id
+    }).populate('participants.user', 'firstName lastName rank position')
+      .populate('participants.assignedStation', 'name number')
+      .populate('createdBy', 'firstName lastName')
+      .sort({ createdAt: -1 });
 
-    if (!user.currentBidSession) {
-      return res.json({ bidHistory: [] });
-    }
+    const bidHistory = [];
 
-    const participant = user.currentBidSession.participants.find(
-      p => p.user._id.toString() === req.user._id.toString()
-    );
+    bidSessions.forEach(session => {
+      const participant = session.participants.find(
+        p => p.user._id.toString() === req.user._id.toString()
+      );
 
-    res.json({ 
-      bidHistory: participant ? participant.bidHistory : [],
-      session: user.currentBidSession.getSummary()
+      if (participant && participant.bidHistory && participant.bidHistory.length > 0) {
+        participant.bidHistory.forEach(bid => {
+          bidHistory.push({
+            _id: bid._id,
+            session: {
+              _id: session._id,
+              name: session.name,
+              year: session.year
+            },
+            station: bid.station,
+            shift: bid.shift,
+            position: bid.position,
+            timestamp: bid.timestamp,
+            status: participant.hasBid ? 'completed' : 'pending',
+            bidPriority: participant.bidPriority
+          });
+        });
+      } else if (participant) {
+        // Add a record for participation even if no bids were made
+        bidHistory.push({
+          _id: session._id,
+          session: {
+            _id: session._id,
+            name: session.name,
+            year: session.year
+          },
+          station: participant.assignedStation,
+          shift: participant.assignedShift,
+          position: participant.assignedPosition,
+          timestamp: session.createdAt,
+          status: participant.hasBid ? 'completed' : 'pending',
+          bidPriority: participant.bidPriority
+        });
+      }
     });
+
+    res.json({ bidHistory });
 
   } catch (error) {
     console.error('Get bid history error:', error);
@@ -284,6 +316,69 @@ router.get('/seniority', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Get seniority error:', error);
     res.status(500).json({ error: 'Failed to get seniority information' });
+  }
+});
+
+// Get user's recent activity
+router.get('/recent-activity', authenticateToken, async (req, res) => {
+  try {
+    // For now, return mock data. In a real application, you would track user activity
+    const activities = [
+      {
+        type: 'login',
+        title: 'Logged in',
+        description: 'Successfully logged into the system',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
+      },
+      {
+        type: 'profile',
+        title: 'Profile Updated',
+        description: 'Updated personal information',
+        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000) // 1 day ago
+      },
+      {
+        type: 'bid',
+        title: 'Bid Submitted',
+        description: 'Submitted bid for Station 1, A Shift',
+        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) // 3 days ago
+      }
+    ];
+
+    res.json({ activities });
+
+  } catch (error) {
+    console.error('Get recent activity error:', error);
+    res.status(500).json({ error: 'Failed to get recent activity' });
+  }
+});
+
+// Get user's notifications
+router.get('/notifications', authenticateToken, async (req, res) => {
+  try {
+    // For now, return mock data. In a real application, you would have a notifications system
+    const notifications = [
+      {
+        title: 'Bid Session Starting',
+        message: 'A new bid session will start in 30 minutes',
+        timestamp: new Date(Date.now() - 30 * 60 * 1000) // 30 minutes ago
+      },
+      {
+        title: 'Your Turn',
+        message: 'It\'s your turn to place a bid',
+        timestamp: new Date(Date.now() - 5 * 60 * 1000) // 5 minutes ago
+      },
+      {
+        title: 'Bid Confirmed',
+        message: 'Your bid for Station 2 has been confirmed',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
+      }
+    ];
+
+    res.json({ notifications });
+
+  } catch (error) {
+    console.error('Get notifications error:', error);
+    res.status(500).json({ error: 'Failed to get notifications' });
   }
 });
 
