@@ -59,7 +59,7 @@ const BidSessionManagement = () => {
       setBidSessions(sessions);
       
       // Find the currently active session
-      const activeSession = sessions.find(s => s.status === 'active');
+      const activeSession = sessions.find(s => s.status === 'active' || s.status === 'paused');
       setCurrentActiveSession(activeSession);
     } catch (error) {
       console.error('Error fetching bid sessions:', error);
@@ -144,9 +144,9 @@ const BidSessionManagement = () => {
 
   const handleUpdateSession = async (data) => {
     try {
-      const response = await api.put(endpoints.bidSessions.update(selectedSession.id), data);
+      const response = await api.put(endpoints.bidSessions.update(selectedSession.id || selectedSession._id), data);
       setBidSessions(bidSessions.map(session => 
-        session.id === selectedSession.id ? response.data.session : session
+        (session.id || session._id) === (selectedSession.id || selectedSession._id) ? response.data.session : session
       ));
       setIsEditing(false);
       setSelectedSession(null);
@@ -217,14 +217,14 @@ const BidSessionManagement = () => {
     }
   };
 
-  const handleAutoAssign = async (sessionId, userId) => {
+  const handleMoveToBack = async (sessionId, userId) => {
     try {
-      await api.post(`/api/bid-sessions/${sessionId}/auto-assign`, { userId });
+      await api.post(`/api/bid-sessions/${sessionId}/move-to-back`, { userId });
       await fetchBidSessions(); // Refresh the list
-      toast.success('User auto-assigned successfully');
+      toast.success('User moved to back of queue successfully');
     } catch (error) {
-      console.error('Error auto-assigning user:', error);
-      toast.error(error.response?.data?.error || 'Failed to auto-assign user');
+      console.error('Error moving user to back of queue:', error);
+      toast.error(error.response?.data?.error || 'Failed to move user to back of queue');
     }
   };
 
@@ -383,7 +383,7 @@ const BidSessionManagement = () => {
           onSkipTurn={handleSkipTurn}
           onPauseSession={handlePauseSession}
           onResumeSession={handleResumeSession}
-          onAutoAssign={handleAutoAssign}
+          onAutoAssign={handleMoveToBack}
         />
       )}
 
@@ -425,7 +425,7 @@ const BidSessionManagement = () => {
       {/* Bid Sessions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredSessions.map((session) => (
-          <div key={session.id} className="card hover:shadow-md transition-shadow">
+          <div key={session.id || session._id} className="card hover:shadow-md transition-shadow">
             <div className="card-header">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-gray-900 truncate">{session.name}</h3>
@@ -498,7 +498,7 @@ const BidSessionManagement = () => {
                 <div className="flex items-center space-x-2">
                   {session.status === 'draft' && (
                     <Button
-                      onClick={() => handleStartSession(session.id)}
+                      onClick={() => handleStartSession(session.id || session._id)}
                       variant="primary"
                       size="sm"
                     >
@@ -508,7 +508,7 @@ const BidSessionManagement = () => {
                   )}
                   {session.status === 'active' && (
                     <Button
-                      onClick={() => handlePauseSession(session.id)}
+                      onClick={() => handlePauseSession(session.id || session._id)}
                       variant="secondary"
                       size="sm"
                     >
@@ -518,7 +518,7 @@ const BidSessionManagement = () => {
                   )}
                   {session.status === 'paused' && (
                     <Button
-                      onClick={() => handleResumeSession(session.id)}
+                      onClick={() => handleResumeSession(session.id || session._id)}
                       variant="primary"
                       size="sm"
                     >

@@ -15,6 +15,7 @@ import Button from '../UI/Button';
 const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession, onAutoAssign }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const [isCheckingExpiration, setIsCheckingExpiration] = useState(false);
 
   // Update current time every second
   useEffect(() => {
@@ -35,13 +36,50 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
     }
   }, [session?.currentBidEnd, currentTime]);
 
-  if (!session || session.status !== 'active') {
+  // Check for time expiration every 5 seconds when session is active
+  useEffect(() => {
+    if (!session || session.status !== 'active' || isCheckingExpiration) {
+      return;
+    }
+
+    const checkExpiration = async () => {
+      if (timeRemaining <= 0 && timeRemaining > -5000) { // Within 5 seconds of expiration
+        setIsCheckingExpiration(true);
+        try {
+          const response = await fetch(`/api/bid-sessions/${session.id || session._id}/check-time-expiration`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.timeExpired) {
+              // Refresh the session data
+              window.location.reload();
+            }
+          }
+        } catch (error) {
+          console.error('Error checking time expiration:', error);
+        } finally {
+          setIsCheckingExpiration(false);
+        }
+      }
+    };
+
+    const interval = setInterval(checkExpiration, 5000); // Check every 5 seconds
+    return () => clearInterval(interval);
+  }, [session, timeRemaining, isCheckingExpiration]);
+
+  if (!session || (session.status !== 'active' && session.status !== 'paused')) {
     return null;
   }
 
-  const currentParticipant = session.participants?.find(p => p.position === session.currentParticipant);
-  const nextParticipant = session.participants?.find(p => p.position === session.currentParticipant + 1);
-  const upcomingParticipants = session.participants?.slice(session.currentParticipant + 1, session.currentParticipant + 4);
+  const currentParticipant = session.participants?.find(p => p.position === session.currentParticipant - 1);
+  const nextParticipant = session.participants?.find(p => p.position === session.currentParticipant);
+  const upcomingParticipants = session.participants?.slice(session.currentParticipant, session.currentParticipant + 3);
 
   const formatTime = (milliseconds) => {
     if (milliseconds <= 0) return '00:00';
@@ -67,14 +105,14 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
   const handleSkipTurn = () => {
     if (onSkipTurn && currentParticipant) {
       const userId = currentParticipant.user.id || currentParticipant.user._id;
-      onSkipTurn(session.id, userId);
+      onSkipTurn(session.id || session._id, userId);
     }
   };
 
   const handleAutoAssign = () => {
     if (onAutoAssign && currentParticipant) {
       const userId = currentParticipant.user.id || currentParticipant.user._id;
-      onAutoAssign(session.id, userId);
+      onAutoAssign(session.id || session._id, userId);
     }
   };
 
@@ -106,7 +144,7 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
           </div>
         </div>
 
-        {currentParticipant ? (
+        {currentParticipant && currentParticipant.user ? (
           <div className="p-4 rounded-lg border-2 border-blue-500 bg-blue-50">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -154,13 +192,13 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
                   className="text-purple-600 hover:text-purple-800"
                 >
                   <RotateCcw className="w-4 h-4 mr-1" />
-                  Auto Assign
+                  Move to Back
                 </Button>
               </div>
               <div className="flex items-center space-x-2">
                                  {session.status === 'active' ? (
                    <Button
-                     onClick={() => onPauseSession?.(session.id)}
+                     onClick={() => onPauseSession?.(session.id || session._id)}
                      variant="secondary"
                      size="sm"
                      className="text-yellow-600 hover:text-yellow-800"
@@ -170,7 +208,7 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
                    </Button>
                  ) : (
                    <Button
-                     onClick={() => onResumeSession?.(session.id)}
+                     onClick={() => onResumeSession?.(session.id || session._id)}
                      variant="secondary"
                      size="sm"
                      className="text-green-600 hover:text-green-800"
@@ -190,7 +228,7 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
       </div>
 
       {/* Next in Queue */}
-      {nextParticipant && (
+      {nextParticipant && nextParticipant.user && (
         <div className="mb-4">
           <h4 className="text-md font-medium text-gray-900 flex items-center mb-3">
             <Users className="w-4 h-4 mr-2" />
@@ -217,14 +255,14 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
       )}
 
       {/* Upcoming Participants */}
-      {upcomingParticipants && upcomingParticipants.length > 0 && (
+      {upcomingParticipants && upcomingParticipants.length > 0 && upcomingParticipants.some(p => p.user) && (
         <div className="mb-4">
           <h4 className="text-md font-medium text-gray-900 flex items-center mb-3">
             <Eye className="w-4 h-4 mr-2" />
             Upcoming (Next 3)
           </h4>
           <div className="space-y-2">
-                         {upcomingParticipants.map((participant, index) => (
+                         {upcomingParticipants.filter(p => p.user).map((participant, index) => (
                <div key={participant.user.id || participant.user._id} className="p-2 rounded-lg border border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -269,7 +307,7 @@ const AdminTurnDisplay = ({ session, onSkipTurn, onPauseSession, onResumeSession
           ></div>
         </div>
         <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-          <span>Auto Assignments: {session.autoAssignments || 0}</span>
+          <span>Moved to Back: {session.movedToBackCount || 0}</span>
           <span>Total Participants: {session.participants?.length || 0}</span>
         </div>
       </div>

@@ -16,6 +16,8 @@ router.get('/', authenticateToken, async (req, res) => {
     if (year) filter.year = parseInt(year);
 
     const bidSessions = await BidSession.find(filter)
+      .populate('participants.user', 'firstName lastName rank position employeeId')
+      .populate('participants.assignedStation', 'name number')
       .populate('createdBy', 'firstName lastName')
       .sort({ createdAt: -1 });
 
@@ -142,16 +144,23 @@ router.post('/', [
       .populate('participants.user', 'firstName lastName rank position employeeId')
       .populate('createdBy', 'firstName lastName');
 
-    // Emit socket notification to all participants
+    // Emit socket notification to all participants and automatically join them to the session
     if (global.io && participantIds && participantIds.length > 0) {
       participantIds.forEach(userId => {
-        global.io.to(`user-${userId}`).emit('new-bid-session', {
+        // Notify user about new bid session
+        global.io.to(`user_${userId}`).emit('new-bid-session', {
           sessionId: bidSession._id,
           sessionName: bidSession.name,
           scheduledStart: bidSession.scheduledStart,
           scheduledEnd: bidSession.scheduledEnd,
           participantCount: bidSession.participants.length,
           createdBy: req.user.firstName + ' ' + req.user.lastName
+        });
+        
+        // Automatically join the user to the bid session room
+        global.io.to(`user_${userId}`).emit('auto-join-bid-session', {
+          sessionId: bidSession._id,
+          sessionName: bidSession.name
         });
       });
 
@@ -166,7 +175,7 @@ router.post('/', [
 
     res.status(201).json({
       message: 'Bid session created successfully',
-      bidSession: updatedSession.getSummary()
+      session: updatedSession.getSummary()
     });
 
   } catch (error) {
@@ -303,6 +312,9 @@ router.post('/:id/participants', [
     // Get users and calculate their bid priorities
     const users = await User.find({ _id: { $in: userIds } });
     
+    // Track which users were actually added
+    const newlyAddedUserIds = [];
+    
     for (const user of users) {
       // Check if user is already a participant
       const existingParticipant = bidSession.participants.find(
@@ -312,6 +324,7 @@ router.post('/:id/participants', [
       if (!existingParticipant) {
         user.calculateBidPriority();
         await bidSession.addParticipant(user._id, user.bidPriority);
+        newlyAddedUserIds.push(user._id);
       }
     }
 
@@ -325,13 +338,20 @@ router.post('/:id/participants', [
 
     await bidSession.save();
 
-    // Emit socket notification to newly added participants
+    // Emit socket notification to newly added participants and automatically join them to the session
     if (global.io) {
-      userIds.forEach(userId => {
-        global.io.to(`user-${userId}`).emit('added-to-bid-session', {
+      newlyAddedUserIds.forEach(userId => {
+        // Notify user they've been added to the session
+        global.io.to(`user_${userId}`).emit('added-to-bid-session', {
           sessionId: bidSession._id,
           sessionName: bidSession.name,
           participantCount: bidSession.totalParticipants
+        });
+        
+        // Automatically join the user to the bid session room
+        global.io.to(`user_${userId}`).emit('auto-join-bid-session', {
+          sessionId: bidSession._id,
+          sessionName: bidSession.name
         });
       });
 
@@ -340,7 +360,7 @@ router.post('/:id/participants', [
         sessionId: bidSession._id,
         sessionName: bidSession.name,
         totalParticipants: bidSession.totalParticipants,
-        addedCount: userIds.length
+        addedCount: newlyAddedUserIds.length
       });
     }
 
@@ -608,8 +628,8 @@ router.post('/:id/skip-turn', authenticateAdmin, async (req, res) => {
   }
 });
 
-// POST /api/bid-sessions/:id/auto-assign - Auto assign current participant (admin only)
-router.post('/:id/auto-assign', authenticateAdmin, async (req, res) => {
+// POST /api/bid-sessions/:id/move-to-back - Move current participant to back of queue (admin only)
+router.post('/:id/move-to-back', authenticateAdmin, async (req, res) => {
   try {
     const { userId } = req.body;
     const bidSession = await BidSession.findById(req.params.id);
@@ -623,14 +643,14 @@ router.post('/:id/auto-assign', authenticateAdmin, async (req, res) => {
     }
 
     // Find the current participant
-    const currentParticipant = bidSession.participants.find(p => p.position === bidSession.currentParticipant);
+    const currentParticipant = bidSession.participants.find(p => p.position === bidSession.currentParticipant - 1);
     
     if (!currentParticipant || currentParticipant.user.toString() !== userId) {
       return res.status(400).json({ error: 'Invalid current participant' });
     }
 
-    // Auto assign the current participant
-    await bidSession.autoAssignCurrentParticipant();
+    // Move the current participant to the back of the queue
+    await bidSession.moveCurrentParticipantToBack();
 
     // Emit turn update to all connected clients
     if (global.io) {
@@ -643,13 +663,52 @@ router.post('/:id/auto-assign', authenticateAdmin, async (req, res) => {
     }
 
     res.json({ 
-      message: 'Participant auto-assigned successfully',
+      message: 'Participant moved to back of queue successfully',
       session: bidSession.getSummary()
     });
 
   } catch (error) {
-    console.error('Auto assign error:', error);
-    res.status(500).json({ error: 'Failed to auto-assign participant' });
+    console.error('Move to back error:', error);
+    res.status(500).json({ error: 'Failed to move participant to back of queue' });
+  }
+});
+
+// Check time expiration for current participant (admin only)
+router.post('/:id/check-time-expiration', authenticateAdmin, async (req, res) => {
+  try {
+    const bidSession = await BidSession.findById(req.params.id);
+    
+    if (!bidSession) {
+      return res.status(404).json({ error: 'Bid session not found' });
+    }
+
+    if (bidSession.status !== 'active') {
+      return res.status(400).json({ error: 'Bid session is not active' });
+    }
+
+    const timeExpired = await bidSession.checkTimeExpiration();
+    
+    if (timeExpired) {
+      // Emit turn update to all connected clients
+      if (global.io) {
+        global.io.emit('turn-updated', {
+          sessionId: bidSession._id,
+          currentParticipant: bidSession.currentParticipant,
+          completedBids: bidSession.completedBids,
+          status: bidSession.status,
+          message: 'Participant moved to back due to time expiration'
+        });
+      }
+    }
+
+    res.json({ 
+      timeExpired,
+      session: bidSession.getSummary()
+    });
+
+  } catch (error) {
+    console.error('Check time expiration error:', error);
+    res.status(500).json({ error: 'Failed to check time expiration' });
   }
 });
 
@@ -685,6 +744,7 @@ router.get('/:id/my-participation', authenticateToken, async (req, res) => {
         bidPriority: participant.bidPriority,
         hasBid: participant.hasBid,
         autoAssigned: participant.autoAssigned,
+        attempts: participant.attempts || 0,
         timeWindow: participant.timeWindow,
         canBid,
         timeRemaining,

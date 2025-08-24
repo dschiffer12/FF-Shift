@@ -164,6 +164,13 @@ export const SocketProvider = ({ children }) => {
       });
     });
 
+    // Automatically join bid session when added by admin
+    newSocket.on('auto-join-bid-session', (data) => {
+      console.log('Auto-joining bid session:', data.sessionId);
+      // Automatically join the bid session room
+      newSocket.emit('auto_join_bid_session', { sessionId: data.sessionId });
+    });
+
     // Admin notification for participants added
     newSocket.on('participants-added', (data) => {
       if (user?.isAdmin) {

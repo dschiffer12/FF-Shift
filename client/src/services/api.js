@@ -105,12 +105,17 @@ export const endpoints = {
   // Bid Sessions
   bidSessions: {
     list: '/api/bid-sessions',
+    create: '/api/bid-sessions',
     current: '/api/bid-sessions/current',
     detail: (id) => `/api/bid-sessions/${id}`,
+    update: (id) => `/api/bid-sessions/${id}`,
+    delete: (id) => `/api/bid-sessions/${id}`,
     participants: (id) => `/api/bid-sessions/${id}/participants`,
     start: (id) => `/api/bid-sessions/${id}/start`,
     pause: (id) => `/api/bid-sessions/${id}/pause`,
     resume: (id) => `/api/bid-sessions/${id}/resume`,
+    moveToBack: (id) => `/api/bid-sessions/${id}/move-to-back`,
+    checkTimeExpiration: (id) => `/api/bid-sessions/${id}/check-time-expiration`,
     myParticipation: (id) => `/api/bid-sessions/${id}/my-participation`,
   },
 

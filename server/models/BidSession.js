@@ -83,6 +83,14 @@ const bidSessionSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
+    movedToBack: {
+      type: Boolean,
+      default: false
+    },
+    attempts: {
+      type: Number,
+      default: 0
+    },
     bidHistory: [{
       station: {
         type: mongoose.Schema.Types.ObjectId,
@@ -186,6 +194,21 @@ bidSessionSchema.virtual('currentBidTimeRemaining').get(function() {
   return Math.max(0, timeRemaining);
 });
 
+// Virtual for current participant info
+bidSessionSchema.virtual('currentParticipantInfo').get(function() {
+  if (this.currentParticipant > this.participants.length || this.currentParticipant < 1) {
+    return null;
+  }
+  
+  const participant = this.participants[this.currentParticipant - 1];
+  return {
+    position: participant.position,
+    user: participant.user,
+    hasBid: participant.hasBid,
+    timeWindow: participant.timeWindow
+  };
+});
+
 // Method to add participant
 bidSessionSchema.methods.addParticipant = function(userId, bidPriority) {
   const position = this.participants.length;
@@ -268,27 +291,102 @@ bidSessionSchema.methods.advanceToNextParticipant = function() {
   if (this.currentParticipant <= this.participants.length) {
     this.setCurrentParticipantTimeWindow();
   } else {
-    this.completeSession();
+    // Check if session should complete
+    this.checkSessionCompletion();
   }
   
   return this.save();
 };
 
-// Method to auto-assign current participant
-bidSessionSchema.methods.autoAssignCurrentParticipant = function() {
+// Method to check if session should complete
+bidSessionSchema.methods.checkSessionCompletion = function() {
+  const maxAttempts = 3; // Maximum number of times a participant can be moved to back
+  
+  // Check if all participants have either made a bid or exceeded max attempts
+  const allParticipantsHandled = this.participants.every(participant => {
+    return participant.hasBid || (participant.attempts >= maxAttempts);
+  });
+  
+  if (allParticipantsHandled) {
+    this.completeSession();
+  } else {
+    // Find next participant who hasn't made a bid and hasn't exceeded max attempts
+    const nextParticipantIndex = this.participants.findIndex(participant => {
+      return !participant.hasBid && participant.attempts < maxAttempts;
+    });
+    
+    if (nextParticipantIndex !== -1) {
+      this.currentParticipant = nextParticipantIndex + 1; // Convert to 1-based indexing
+      this.setCurrentParticipantTimeWindow();
+    } else {
+      // All participants have either bid or exceeded max attempts
+      this.completeSession();
+    }
+  }
+};
+
+// Method to check if current participant's time has expired and move them to back
+bidSessionSchema.methods.checkTimeExpiration = function() {
+  if (this.status !== 'active' || this.currentParticipant > this.participants.length || this.currentParticipant < 1) {
+    return false;
+  }
+  
+  const participantIndex = this.currentParticipant - 1;
+  const participant = this.participants[participantIndex];
+  
+  if (!participant.timeWindow || !participant.timeWindow.end) {
+    return false;
+  }
+  
+  const now = new Date();
+  const timeExpired = now > participant.timeWindow.end;
+  
+  if (timeExpired && !participant.hasBid) {
+    // Time has expired and participant hasn't made a bid, move them to back
+    this.moveCurrentParticipantToBack();
+    return true;
+  }
+  
+  return false;
+};
+
+// Method to move current participant to back of queue
+bidSessionSchema.methods.moveCurrentParticipantToBack = function() {
   if (this.currentParticipant > this.participants.length || this.currentParticipant < 1) return;
   
   const participantIndex = this.currentParticipant - 1;
   const participant = this.participants[participantIndex];
-  participant.autoAssigned = true;
-  participant.hasBid = true;
-  this.autoAssignments++;
-  this.completedBids++;
   
-  // Auto-assignment logic would go here
-  // For now, just mark as auto-assigned
+  // Mark participant as moved to back and increment attempts
+  participant.movedToBack = true;
+  participant.attempts = (participant.attempts || 0) + 1;
   
-  this.advanceToNextParticipant();
+  // Move participant to the end of the queue
+  const movedParticipant = this.participants.splice(participantIndex, 1)[0];
+  this.participants.push(movedParticipant);
+  
+  // Update positions for all participants
+  this.participants.forEach((p, index) => {
+    p.position = index;
+  });
+  
+  // Don't increment completedBids since they're still in the queue
+  // Don't increment autoAssignments since we're not auto-assigning
+  
+  // Find the next participant who hasn't made a bid and hasn't exceeded max attempts
+  const maxAttempts = 3;
+  const nextParticipantIndex = this.participants.findIndex(p => {
+    return !p.hasBid && (p.attempts || 0) < maxAttempts;
+  });
+  
+  if (nextParticipantIndex !== -1) {
+    this.currentParticipant = nextParticipantIndex + 1; // Convert to 1-based indexing
+    this.setCurrentParticipantTimeWindow();
+  } else {
+    // All participants have either bid or exceeded max attempts
+    this.completeSession();
+  }
+  
   return this.save();
 };
 
@@ -320,6 +418,9 @@ bidSessionSchema.methods.processBid = function(stationId, shift, position) {
 
 // Method to get session summary
 bidSessionSchema.methods.getSummary = function() {
+  // Count participants who have been moved to back
+  const movedToBackCount = this.participants.filter(p => p.movedToBack).length;
+  
   return {
     id: this._id,
     name: this.name,
@@ -329,9 +430,15 @@ bidSessionSchema.methods.getSummary = function() {
     totalParticipants: this.totalParticipants,
     completedBids: this.completedBids,
     autoAssignments: this.autoAssignments,
+    movedToBackCount: movedToBackCount,
     currentParticipant: this.currentParticipant,
     scheduledStart: this.scheduledStart,
-    scheduledEnd: this.scheduledEnd
+    scheduledEnd: this.scheduledEnd,
+    participants: this.participants,
+    currentBidStart: this.currentBidStart,
+    currentBidEnd: this.currentBidEnd,
+    bidWindowDuration: this.bidWindowDuration,
+    currentParticipantInfo: this.currentParticipantInfo
   };
 };
 

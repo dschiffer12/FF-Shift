@@ -27,54 +27,21 @@ const handleSocketConnection = (socket, io) => {
   // Handle user joining bid session
   socket.on('join_bid_session', async (sessionId) => {
     try {
-      const bidSession = await BidSession.findById(sessionId)
-        .populate('participants.user', 'firstName lastName rank position')
-        .populate('participants.assignedStation', 'name number');
-
-      if (!bidSession) {
-        socket.emit('error', { message: 'Bid session not found' });
-        return;
-      }
-
-      // Join session room
-      socket.join(`bid_session_${sessionId}`);
-      
-      // Store room info
-      if (!bidSessionRooms.has(sessionId)) {
-        bidSessionRooms.set(sessionId, new Set());
-      }
-      bidSessionRooms.get(sessionId).add(socket.user._id.toString());
-
-      // Send session info to user
-      socket.emit('bid_session_joined', {
-        session: bidSession.getSummary(),
-        currentParticipant: bidSession.currentParticipantInfo,
-        participants: bidSession.participants.map(p => ({
-          id: p.user._id,
-          name: `${p.user.firstName} ${p.user.lastName}`,
-          rank: p.user.rank,
-          position: p.user.position,
-          bidPosition: p.position,
-          hasBid: p.hasBid,
-          assignedStation: p.assignedStation,
-          assignedShift: p.assignedShift,
-          autoAssigned: p.autoAssigned
-        }))
-      });
-
-      // Notify others in session
-      socket.to(`bid_session_${sessionId}`).emit('user_joined_session', {
-        user: {
-          id: socket.user._id,
-          name: socket.user.fullName,
-          rank: socket.user.rank,
-          position: socket.user.position
-        }
-      });
-
+      await joinUserToBidSession(socket, sessionId, io);
     } catch (error) {
       console.error('Join bid session error:', error);
       socket.emit('error', { message: 'Failed to join bid session' });
+    }
+  });
+
+  // Handle automatic joining of users when added by admin
+  socket.on('auto_join_bid_session', async (data) => {
+    try {
+      const { sessionId } = data;
+      await joinUserToBidSession(socket, sessionId, io);
+    } catch (error) {
+      console.error('Auto join bid session error:', error);
+      socket.emit('error', { message: 'Failed to auto-join bid session' });
     }
   });
 
@@ -272,7 +239,7 @@ const handleSocketConnection = (socket, io) => {
         return;
       }
 
-      await bidSession.autoAssignCurrentParticipant();
+      await bidSession.moveCurrentParticipantToBack();
 
       // Broadcast auto-assignment
       io.to(`bid_session_${sessionId}`).emit('participant_auto_assigned', {
@@ -349,6 +316,54 @@ const handleSocketConnection = (socket, io) => {
       isAdmin: socket.user.isAdmin
     },
     timestamp: new Date()
+  });
+};
+
+// Helper function to join user to bid session
+const joinUserToBidSession = async (socket, sessionId, io) => {
+  const bidSession = await BidSession.findById(sessionId)
+    .populate('participants.user', 'firstName lastName rank position')
+    .populate('participants.assignedStation', 'name number');
+
+  if (!bidSession) {
+    socket.emit('error', { message: 'Bid session not found' });
+    return;
+  }
+
+  // Join session room
+  socket.join(`bid_session_${sessionId}`);
+  
+  // Store room info
+  if (!bidSessionRooms.has(sessionId)) {
+    bidSessionRooms.set(sessionId, new Set());
+  }
+  bidSessionRooms.get(sessionId).add(socket.user._id.toString());
+
+  // Send session info to user
+  socket.emit('bid_session_joined', {
+    session: bidSession.getSummary(),
+    currentParticipant: bidSession.currentParticipantInfo,
+    participants: bidSession.participants.map(p => ({
+      id: p.user._id,
+      name: `${p.user.firstName} ${p.user.lastName}`,
+      rank: p.user.rank,
+      position: p.user.position,
+      bidPosition: p.position,
+      hasBid: p.hasBid,
+      assignedStation: p.assignedStation,
+      assignedShift: p.assignedShift,
+      autoAssigned: p.autoAssigned
+    }))
+  });
+
+  // Notify others in session
+  socket.to(`bid_session_${sessionId}`).emit('user_joined_session', {
+    user: {
+      id: socket.user._id,
+      name: socket.user.fullName,
+      rank: socket.user.rank,
+      position: socket.user.position
+    }
   });
 };
 
