@@ -1075,17 +1075,11 @@ const BidSessionManagement = () => {
 
       {/* Session History Modal */}
       {selectedSessionForHistory && (
-        <div 
-          className="fixed inset-0 bg-red-500 bg-opacity-90 overflow-y-auto h-full w-full z-[9999]"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-        >
-          <div 
-            className="relative top-10 mx-auto p-5 border-4 border-yellow-400 w-full max-w-4xl shadow-2xl rounded-md bg-white"
-            style={{ backgroundColor: 'white', border: '4px solid yellow' }}
-          >
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-red-600">
-                🚨 MODAL TEST - Session ID: {selectedSessionForHistory} 🚨
+              <h3 className="text-lg font-medium text-gray-900">
+                Bid Session History
               </h3>
               <Button
                 onClick={() => {
@@ -1100,26 +1094,8 @@ const BidSessionManagement = () => {
               </Button>
             </div>
             
-            <div className="max-h-96 overflow-y-auto border-2 border-green-400 rounded p-4 bg-green-50">
-              <div className="text-center p-8">
-                <h4 className="text-lg font-medium text-gray-900 mb-4">🎉 MODAL IS WORKING! 🎉</h4>
-                <p className="text-gray-600 mb-4">If you can see this, the modal is working!</p>
-                <p className="text-sm text-gray-500">Session ID: {selectedSessionForHistory}</p>
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
-                  <p className="text-blue-800">This is a test message to verify the modal is rendering correctly.</p>
-                                     <button 
-                     className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                     onClick={() => {
-                       // eslint-disable-next-line no-console
-                       console.log('Test button clicked!');
-                     }}
-                   >
-                    Test Button
-                  </button>
-                </div>
-              </div>
-              {/* Temporarily comment out BidHistory to test modal */}
-              {/* <BidHistory sessionId={selectedSessionForHistory} /> */}
+            <div className="max-h-96 overflow-y-auto">
+              <BidHistory sessionId={selectedSessionForHistory} />
             </div>
             
             <div className="flex items-center justify-end pt-4">
@@ -1138,12 +1114,7 @@ const BidSessionManagement = () => {
         </div>
       )}
       
-      {/* Debug info */}
-      {selectedSessionForHistory && (
-        <div className="fixed bottom-4 right-4 bg-red-500 text-white p-2 rounded z-50">
-          Debug: Modal should be visible for session {selectedSessionForHistory}
-        </div>
-      )}
+
     </div>
   );
 };

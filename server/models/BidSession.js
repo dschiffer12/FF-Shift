@@ -370,7 +370,8 @@ bidSessionSchema.methods.advanceToNextParticipant = function() {
     this.checkSessionCompletion();
   }
   
-  return this.save();
+  // Don't save here - let the calling method handle the save
+  return this;
 };
 
 // Method to check if session should complete
@@ -383,7 +384,10 @@ bidSessionSchema.methods.checkSessionCompletion = function() {
   });
   
   if (allParticipantsHandled) {
-    this.completeSession();
+    // Don't call completeSession() here as it calls save()
+    // Just set the status and let the calling method handle the save
+    this.status = 'completed';
+    this.actualEnd = new Date();
   } else {
     // Find next participant who hasn't made a bid and hasn't exceeded max attempts
     const nextParticipantIndex = this.participants.findIndex(participant => {
@@ -395,13 +399,14 @@ bidSessionSchema.methods.checkSessionCompletion = function() {
       this.setCurrentParticipantTimeWindow();
     } else {
       // All participants have either bid or exceeded max attempts
-      this.completeSession();
+      this.status = 'completed';
+      this.actualEnd = new Date();
     }
   }
 };
 
 // Method to check if current participant's time has expired and move them to back
-bidSessionSchema.methods.checkTimeExpiration = function() {
+bidSessionSchema.methods.checkTimeExpiration = async function() {
   console.log(`Checking time expiration for session ${this._id}, status: ${this.status}, currentParticipant: ${this.currentParticipant}`);
   
   if (this.status !== 'active' || this.currentParticipant > this.participants.length || this.currentParticipant < 1) {
@@ -425,7 +430,7 @@ bidSessionSchema.methods.checkTimeExpiration = function() {
   if (timeExpired && !participant.hasBid) {
     console.log('Time expired and no bid made, moving participant to back');
     // Time has expired and participant hasn't made a bid, move them to back
-    this.moveCurrentParticipantToBack();
+    await this.moveCurrentParticipantToBack();
     return true;
   }
   
@@ -433,7 +438,7 @@ bidSessionSchema.methods.checkTimeExpiration = function() {
 };
 
 // Method to move current participant to back of queue
-bidSessionSchema.methods.moveCurrentParticipantToBack = function() {
+bidSessionSchema.methods.moveCurrentParticipantToBack = async function() {
   console.log(`Moving participant to back for session ${this._id}, currentParticipant: ${this.currentParticipant}`);
   
   if (this.currentParticipant > this.participants.length || this.currentParticipant < 1) {
@@ -475,21 +480,44 @@ bidSessionSchema.methods.moveCurrentParticipantToBack = function() {
   } else {
     // All participants have either bid or exceeded max attempts
     console.log('All participants handled, completing session');
-    this.completeSession();
+    this.status = 'completed';
+    this.actualEnd = new Date();
   }
   
-  // Add to session history
-  this.sessionHistory.push({
-    action: 'moved_to_back',
-    userId: participant.user,
-    userName: participant.user.firstName && participant.user.lastName 
-      ? `${participant.user.firstName} ${participant.user.lastName}`
-      : 'Unknown User',
-    details: `Moved to back of queue due to time expiration`
-  });
+  // Use findOneAndUpdate to avoid parallel save issues
+  const updatedSession = await this.constructor.findOneAndUpdate(
+    { _id: this._id },
+    {
+      $push: {
+        sessionHistory: {
+          action: 'moved_to_back',
+          userId: participant.user,
+          userName: participant.user.firstName && participant.user.lastName 
+            ? `${participant.user.firstName} ${participant.user.lastName}`
+            : 'Unknown User',
+          details: `Moved to back of queue due to time expiration`,
+          timestamp: new Date()
+        }
+      },
+      $set: {
+        participants: this.participants,
+        currentParticipant: this.currentParticipant,
+        currentBidStart: this.currentBidStart,
+        currentBidEnd: this.currentBidEnd
+      }
+    },
+    { new: true }
+  );
+  
+  if (!updatedSession) {
+    throw new Error('Failed to update bid session');
+  }
+  
+  // Update the current document instance
+  Object.assign(this, updatedSession.toObject());
   
   console.log('Participant moved to back successfully');
-  return this.save();
+  return this;
 };
 
 // Method to process bid
@@ -501,42 +529,82 @@ bidSessionSchema.methods.processBid = async function(stationId, shift, position)
   const participantIndex = this.currentParticipant - 1;
   const participant = this.participants[participantIndex];
   
-  // Add to bid history
-  participant.bidHistory.push({
-    station: stationId,
-    shift: shift,
-    position: position
-  });
-  
-  // Assign the bid
-  participant.assignedStation = stationId;
-  participant.assignedShift = shift;
-  participant.assignedPosition = position;
-  participant.hasBid = true;
-  
-  // Update station assignment
+  // Update station assignment first
   const Station = require('./Station');
   const station = await Station.findById(stationId);
   if (station) {
     await station.addAssignment(shift, participant.user, position);
   }
   
-  // Add to session history
-  this.sessionHistory.push({
-    action: 'bid_submitted',
-    userId: participant.user,
-    userName: participant.user.firstName && participant.user.lastName 
-      ? `${participant.user.firstName} ${participant.user.lastName}`
-      : 'Unknown User',
-    station: stationId,
-    stationName: station ? station.name : 'Unknown Station',
-    shift: shift,
-    position: position,
-    details: `Bid submitted for ${station ? station.name : 'Unknown Station'} - ${shift} Shift - ${position}`
-  });
+  // Use findOneAndUpdate to avoid parallel save issues
+  const updatedSession = await this.constructor.findOneAndUpdate(
+    { _id: this._id },
+    {
+      $push: {
+        'participants.$.bidHistory': {
+          station: stationId,
+          shift: shift,
+          position: position
+        },
+        sessionHistory: {
+          action: 'bid_submitted',
+          userId: participant.user,
+          userName: participant.user.firstName && participant.user.lastName 
+            ? `${participant.user.firstName} ${participant.user.lastName}`
+            : 'Unknown User',
+          station: stationId,
+          stationName: station ? station.name : 'Unknown Station',
+          shift: shift,
+          position: position,
+          details: `Bid submitted for ${station ? station.name : 'Unknown Station'} - ${shift} Shift - ${position}`,
+          timestamp: new Date()
+        }
+      },
+      $set: {
+        'participants.$.assignedStation': stationId,
+        'participants.$.assignedShift': shift,
+        'participants.$.assignedPosition': position,
+        'participants.$.hasBid': true
+      }
+    },
+    { 
+      new: true,
+      arrayFilters: [{ 'participants._id': participant._id }]
+    }
+  );
   
+  if (!updatedSession) {
+    throw new Error('Failed to update bid session');
+  }
+  
+  // Update the current document instance
+  Object.assign(this, updatedSession.toObject());
+  
+  // Advance to next participant and save the advancement
   this.advanceToNextParticipant();
-  return this.save();
+  
+  // Use findOneAndUpdate for the advancement to avoid parallel save issues
+  const finalUpdate = await this.constructor.findOneAndUpdate(
+    { _id: this._id },
+    {
+      $set: {
+        currentParticipant: this.currentParticipant,
+        currentBidStart: this.currentBidStart,
+        currentBidEnd: this.currentBidEnd,
+        completedBids: this.completedBids
+      }
+    },
+    { new: true }
+  );
+  
+  if (!finalUpdate) {
+    throw new Error('Failed to update bid session advancement');
+  }
+  
+  // Update the current document instance
+  Object.assign(this, finalUpdate.toObject());
+  
+  return this;
 };
 
 // Method to calculate available stations

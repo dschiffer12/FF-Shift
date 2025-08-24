@@ -374,6 +374,90 @@ router.post('/:id/participants', [
   }
 });
 
+// Join bid session (user can join themselves)
+router.post('/:id/join', authenticateToken, async (req, res) => {
+  try {
+    const bidSession = await BidSession.findById(req.params.id);
+    if (!bidSession) {
+      return res.status(404).json({ error: 'Bid session not found' });
+    }
+
+    // Don't allow joining if session is completed
+    if (bidSession.status === 'completed') {
+      return res.status(400).json({ error: 'Cannot join completed session' });
+    }
+
+    // Check if user is already a participant
+    const existingParticipant = bidSession.participants.find(
+      p => p.user.toString() === req.user._id.toString()
+    );
+    
+    if (existingParticipant) {
+      return res.json({
+        message: 'Already a participant in this session',
+        participant: existingParticipant
+      });
+    }
+
+    // Get user and calculate bid priority
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    user.calculateBidPriority();
+    await bidSession.addParticipant(user._id, user.bidPriority);
+
+    // Sort participants by bid priority (highest first)
+    bidSession.participants.sort((a, b) => b.bidPriority - a.bidPriority);
+    
+    // Update positions after sorting
+    bidSession.participants.forEach((participant, index) => {
+      participant.position = index;
+    });
+
+    await bidSession.save();
+
+    // Emit socket notification
+    if (global.io) {
+      // Notify user they've joined the session
+      global.io.to(`user_${user._id}`).emit('joined-bid-session', {
+        sessionId: bidSession._id,
+        sessionName: bidSession.name,
+        participantCount: bidSession.totalParticipants
+      });
+      
+      // Automatically join the user to the bid session room
+      global.io.to(`user_${user._id}`).emit('auto-join-bid-session', {
+        sessionId: bidSession._id,
+        sessionName: bidSession.name
+      });
+
+      // Notify admin room
+      global.io.to('admin_room').emit('user-joined-session', {
+        sessionId: bidSession._id,
+        sessionName: bidSession.name,
+        userId: user._id,
+        userName: `${user.firstName} ${user.lastName}`,
+        totalParticipants: bidSession.totalParticipants
+      });
+    }
+
+    res.json({
+      message: 'Successfully joined bid session',
+      session: bidSession.getSummary(),
+      participant: {
+        position: existingParticipant ? existingParticipant.position : bidSession.participants.find(p => p.user.toString() === user._id.toString())?.position,
+        bidPriority: user.bidPriority
+      }
+    });
+
+  } catch (error) {
+    console.error('Join bid session error:', error);
+    res.status(500).json({ error: 'Failed to join bid session' });
+  }
+});
+
 // Remove participant from bid session (admin only)
 router.delete('/:id/participants/:userId', authenticateAdmin, async (req, res) => {
   try {

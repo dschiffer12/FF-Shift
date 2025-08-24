@@ -182,6 +182,20 @@ const Bidding = () => {
       fetchActiveSessions(); // Refresh to get updated session data
     };
 
+    // Listen for joined bid session notification
+    const handleJoinedBidSession = (data) => {
+      console.log('Joined bid session notification:', data);
+      toast.success(`Successfully joined ${data.sessionName}`);
+      fetchActiveSessions(); // Refresh to get updated session data
+    };
+
+    // Listen for auto-join bid session
+    const handleAutoJoinBidSession = (data) => {
+      console.log('Auto-join bid session:', data);
+      toast.success(`Automatically joined ${data.sessionName}`);
+      fetchActiveSessions(); // Refresh to get updated session data
+    };
+
     socket.on('new-bid-session', handleNewBidSession);
     socket.on('bid-session-started', handleSessionStatusChange);
     socket.on('bid-session-paused', handleSessionStatusChange);
@@ -194,6 +208,8 @@ const Bidding = () => {
     socket.on('error', handleBidError);
     socket.on('bid_session_joined', handleSessionJoined);
     socket.on('session-updated', handleSessionUpdated);
+    socket.on('joined-bid-session', handleJoinedBidSession);
+    socket.on('auto-join-bid-session', handleAutoJoinBidSession);
 
     return () => {
       socket.off('new-bid-session', handleNewBidSession);
@@ -208,6 +224,8 @@ const Bidding = () => {
       socket.off('error', handleBidError);
       socket.off('bid_session_joined', handleSessionJoined);
       socket.off('session-updated', handleSessionUpdated);
+      socket.off('joined-bid-session', handleJoinedBidSession);
+      socket.off('auto-join-bid-session', handleAutoJoinBidSession);
     };
   }, [socket, isConnected]);
 
@@ -282,6 +300,38 @@ const Bidding = () => {
       toast.error('Failed to load stations. Please refresh the page.');
     } finally {
       setStationsLoading(false);
+    }
+  };
+
+  const handleJoinSession = async (session) => {
+    try {
+      console.log('Joining session:', session.id || session._id);
+      
+      // First, try to join via API
+      const response = await api.post(`/api/bid-sessions/${session.id || session._id}/join`);
+      console.log('Join session API response:', response.data);
+      
+      // Then join via Socket.IO
+      if (socket && isConnected) {
+        socket.emit('join_bid_session', { sessionId: session.id || session._id });
+        console.log('Emitted join_bid_session event');
+      }
+      
+      toast.success(`Successfully joined ${session.name}`);
+      
+      // Refresh the sessions to get updated participant information
+      fetchActiveSessions();
+      
+    } catch (error) {
+      console.error('Error joining session:', error);
+      
+      // If API fails, try Socket.IO only
+      if (socket && isConnected) {
+        socket.emit('join_bid_session', { sessionId: session.id || session._id });
+        toast.success(`Joined ${session.name} via real-time connection`);
+      } else {
+        toast.error('Failed to join session. Please try again.');
+      }
     }
   };
 
@@ -571,29 +621,36 @@ const Bidding = () => {
                         >
                           View Details
                         </Button>
-                                                                                                   {(session.status === 'active' || session.status === 'paused') && (
-                            <>
-                              {canUserBid && session.id === currentActiveSession?.id && (
-                                <Button
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedSession(session);
-                                    setShowBidModal(true);
-                                  }}
-                                >
-                                  Place Bid
-                                </Button>
-                              )}
+                        {(session.status === 'active' || session.status === 'paused') && (
+                          <>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleJoinSession(session)}
+                            >
+                              Join Session
+                            </Button>
+                            {canUserBid && session.id === currentActiveSession?.id && (
                               <Button
-                                variant="secondary"
+                                variant="primary"
                                 size="sm"
-                                onClick={() => window.location.href = `/live-bid/${session.id || session._id}`}
+                                onClick={() => {
+                                  setSelectedSession(session);
+                                  setShowBidModal(true);
+                                }}
                               >
-                                Join Live Session
+                                Place Bid
                               </Button>
-                            </>
-                          )}
+                            )}
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => window.location.href = `/live-bid/${session.id || session._id}`}
+                            >
+                              Join Live Session
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}

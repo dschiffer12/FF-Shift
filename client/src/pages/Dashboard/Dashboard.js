@@ -247,6 +247,9 @@ const Dashboard = () => {
                 <p className="text-sm text-yellow-700">
                   {currentBidSession.description || 'No description available'}
                 </p>
+                <p className="text-xs text-yellow-600 mt-1">
+                  Status: {currentBidSession.status} • Participants: {currentBidSession.participantCount || 0}
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -255,7 +258,7 @@ const Dashboard = () => {
                 <span className="capitalize">{currentBidSession.status}</span>
               </div>
               <Button
-                onClick={() => navigate('/bid-interface')}
+                onClick={() => navigate('/bidding')}
                 variant="primary"
                 size="sm"
               >
@@ -263,6 +266,35 @@ const Dashboard = () => {
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Active Session Alert */}
+      {!currentBidSession && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <Clock className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-medium text-blue-900">
+                  No Active Bid Sessions
+                </h3>
+                <p className="text-sm text-blue-700">
+                  There are currently no active bid sessions. Check the bidding interface for available sessions.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate('/bidding')}
+              variant="secondary"
+              size="sm"
+            >
+              View Sessions
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </div>
         </div>
       )}
@@ -285,7 +317,7 @@ const Dashboard = () => {
               </div>
             </div>
             <Button
-              onClick={() => navigate('/bid-interface')}
+              onClick={() => navigate('/bidding')}
               variant="danger"
               size="sm"
             >
@@ -390,7 +422,7 @@ const Dashboard = () => {
                       {currentBidSession.description || 'No description available'}
                     </p>
                     <Button
-                      onClick={() => navigate('/bid-interface')}
+                      onClick={() => navigate('/bidding')}
                       variant="primary"
                       size="sm"
                     >

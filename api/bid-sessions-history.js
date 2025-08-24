@@ -1,5 +1,5 @@
-const BidSession = require('../../server/models/BidSession');
-const { connectDB, setCORSHeaders, handlePreflight, authenticateToken } = require('../utils/db');
+const BidSession = require('../server/models/BidSession');
+const { connectDB, setCORSHeaders, handlePreflight, authenticateToken } = require('./utils/db');
 
 module.exports = async (req, res) => {
   // Set CORS headers
