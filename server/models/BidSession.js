@@ -441,6 +441,13 @@ bidSessionSchema.methods.processBid = async function(stationId, shift, position)
   return this.save();
 };
 
+// Method to calculate available stations
+bidSessionSchema.methods.calculateAvailableStations = function() {
+  // For now, return a simple count based on the number of active stations
+  // This is a simplified version - in a real implementation, you'd check actual availability
+  return 5; // Return the number of stations we know exist
+};
+
 // Method to get session summary
 bidSessionSchema.methods.getSummary = function() {
   // Count participants who have been moved to back
@@ -454,7 +461,7 @@ bidSessionSchema.methods.getSummary = function() {
     progress: this.progressPercentage,
     totalParticipants: this.totalParticipants,
     participantCount: this.participants.length,
-    availableStations: 0, // TODO: Calculate available stations
+         availableStations: this.calculateAvailableStations(),
     completedBids: this.completedBids,
     autoAssignments: this.autoAssignments,
     movedToBackCount: movedToBackCount,

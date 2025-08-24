@@ -72,7 +72,7 @@ const AdminTurnDisplay = ({ session, onPauseSession, onResumeSession, onAutoAssi
     return () => clearInterval(interval);
   }, [session, timeRemaining, isCheckingExpiration]);
 
-  if (!session || (session.status !== 'active' && session.status !== 'paused')) {
+  if (!session || (session.status !== 'active' && session.status !== 'paused' && session.status !== 'scheduled')) {
     return null;
   }
 

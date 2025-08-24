@@ -17,7 +17,8 @@ import {
   RefreshCw,
   Bell,
   Star,
-  X
+  X,
+  Edit3
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -47,7 +48,7 @@ const Bidding = () => {
 
   // Check if current user can bid
   const canUserBid = currentActiveSession && 
-    currentActiveSession.status === 'active' && 
+    (currentActiveSession.status === 'active' || currentActiveSession.status === 'paused') && 
     currentActiveSession.participants?.some(p => 
       (p.user?.id === user?._id || p.user?._id === user?._id) && 
       p.position === (currentActiveSession.currentParticipant - 1)
@@ -55,11 +56,29 @@ const Bidding = () => {
 
   // Check if it's the user's turn
   const isUserTurn = currentActiveSession && 
-    currentActiveSession.status === 'active' && 
+    (currentActiveSession.status === 'active' || currentActiveSession.status === 'paused') && 
     currentActiveSession.participants?.some(p => 
       (p.user?.id === user?._id || p.user?._id === user?._id) && 
       p.position === (currentActiveSession.currentParticipant - 1)
     );
+    
+  // Debug logging for turn detection
+  console.log('Bidding Component - Turn Detection:', {
+    currentActiveSession: currentActiveSession ? {
+      id: currentActiveSession.id || currentActiveSession._id,
+      status: currentActiveSession.status,
+      currentParticipant: currentActiveSession.currentParticipant
+    } : null,
+    currentUser: user?._id,
+    canUserBid,
+    isUserTurn,
+    participants: currentActiveSession?.participants?.map(p => ({
+      position: p.position,
+      userId: p.user?._id,
+      name: `${p.user?.firstName} ${p.user?.lastName}`,
+      isCurrentUser: (p.user?.id === user?._id || p.user?._id === user?._id)
+    }))
+  });
 
   useEffect(() => {
     fetchActiveSessions();
@@ -86,11 +105,11 @@ const Bidding = () => {
   useEffect(() => {
     if (socket && isConnected && activeSessions.length > 0) {
       console.log('Joining bid session rooms for sessions:', activeSessions);
-      activeSessions.forEach(session => {
-        if (session.status === 'active' || session.status === 'paused') {
-          const sessionId = session.id || session._id;
-          console.log('Joining session:', sessionId);
-          socket.emit('join_bid_session', { sessionId });
+             activeSessions.forEach(session => {
+         if (session.status === 'active' || session.status === 'paused' || session.status === 'scheduled') {
+           const sessionId = session.id || session._id;
+           console.log('Joining session:', sessionId);
+           socket.emit('join_bid_session', { sessionId });
           
           // Add a listener to confirm room joining
           socket.on('bid_session_joined', (data) => {
@@ -196,12 +215,31 @@ const Bidding = () => {
     try {
       setLoading(true);
       const response = await api.get(endpoints.bidSessions.current);
-      const sessions = response.data.sessions || [];
+      const allSessions = response.data.sessions || [];
+      
+      // Filter to only show active, paused, or scheduled sessions
+      const sessions = allSessions.filter(s => 
+        s.status === 'active' || s.status === 'paused' || s.status === 'scheduled'
+      );
+      
       setActiveSessions(sessions);
       
-      // Find the currently active session
-      const activeSession = sessions.find(s => s.status === 'active');
+      // Find the currently active or paused session
+      const activeSession = sessions.find(s => s.status === 'active' || s.status === 'paused');
       setCurrentActiveSession(activeSession);
+      
+      // Debug logging
+      console.log('Bidding Component - Fetched sessions:', {
+        totalSessions: sessions.length,
+        activeSession: activeSession,
+        sessions: sessions.map(s => ({
+          id: s.id || s._id,
+          name: s.name,
+          status: s.status,
+          currentParticipant: s.currentParticipant,
+          participantCount: s.participantCount
+        }))
+      });
     } catch (error) {
       console.error('Error fetching active sessions:', error);
       toast.error('Failed to load active sessions');
@@ -314,6 +352,23 @@ const Bidding = () => {
         return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  const getSessionStatusIcon = (status) => {
+    switch (status) {
+      case 'active':
+        return <Play className="w-4 h-4 text-green-600" />;
+      case 'paused':
+        return <Pause className="w-4 h-4 text-orange-600" />;
+      case 'scheduled':
+        return <Calendar className="w-4 h-4 text-blue-600" />;
+      case 'draft':
+        return <Edit3 className="w-4 h-4 text-gray-600" />;
+      case 'completed':
+        return <CheckCircle className="w-4 h-4 text-purple-600" />;
+      default:
+        return <Calendar className="w-4 h-4 text-gray-600" />;
     }
   };
 
@@ -475,17 +530,12 @@ const Bidding = () => {
                             <p className="text-sm text-gray-500">{session.description}</p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSessionStatusColor(session.status)}`}>
-                            {session.status}
-                          </span>
-                          {session.status === 'active' && (
-                            <Play className="w-4 h-4 text-green-600" />
-                          )}
-                          {session.status === 'paused' && (
-                            <Pause className="w-4 h-4 text-orange-600" />
-                          )}
-                        </div>
+                                                 <div className="flex items-center space-x-2">
+                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSessionStatusColor(session.status)}`}>
+                             {session.status}
+                           </span>
+                           {getSessionStatusIcon(session.status)}
+                         </div>
                       </div>
                       <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div className="flex items-center">
@@ -521,42 +571,42 @@ const Bidding = () => {
                         >
                           View Details
                         </Button>
-                                                 {session.status === 'active' && (
-                           <>
-                             {canUserBid && session.id === currentActiveSession?.id && (
-                               <Button
-                                 variant="primary"
-                                 size="sm"
-                                 onClick={() => {
-                                   setSelectedSession(session);
-                                   setShowBidModal(true);
-                                 }}
-                               >
-                                 Place Bid
-                               </Button>
-                             )}
-                             <Button
-                               variant="secondary"
-                               size="sm"
-                               onClick={() => window.location.href = `/live-bid/${session.id || session._id}`}
-                             >
-                               Join Live Session
-                             </Button>
-                           </>
-                         )}
+                                                                                                   {(session.status === 'active' || session.status === 'paused') && (
+                            <>
+                              {canUserBid && session.id === currentActiveSession?.id && (
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedSession(session);
+                                    setShowBidModal(true);
+                                  }}
+                                >
+                                  Place Bid
+                                </Button>
+                              )}
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => window.location.href = `/live-bid/${session.id || session._id}`}
+                              >
+                                Join Live Session
+                              </Button>
+                            </>
+                          )}
                       </div>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Sessions</h3>
-                  <p className="text-gray-600">
-                    There are no active bid sessions at the moment. Check back later!
-                  </p>
-                </div>
-              )}
+                             ) : (
+                 <div className="text-center py-8">
+                   <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Sessions</h3>
+                   <p className="text-gray-600">
+                     There are no active, paused, or scheduled bid sessions at the moment. Check back later!
+                   </p>
+                 </div>
+               )}
             </div>
           </div>
 

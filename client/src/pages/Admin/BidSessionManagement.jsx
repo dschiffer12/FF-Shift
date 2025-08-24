@@ -55,11 +55,11 @@ const BidSessionManagement = () => {
     try {
       setLoading(true);
       const response = await api.get(endpoints.bidSessions.list);
-      const sessions = response.data.sessions || [];
-      setBidSessions(sessions);
+      const allSessions = response.data.sessions || [];
+      setBidSessions(allSessions);
       
-      // Find the currently active session
-      const activeSession = sessions.find(s => s.status === 'active' || s.status === 'paused');
+      // Find the currently active or paused session
+      const activeSession = allSessions.find(s => s.status === 'active' || s.status === 'paused' || s.status === 'scheduled');
       setCurrentActiveSession(activeSession);
     } catch (error) {
       console.error('Error fetching bid sessions:', error);

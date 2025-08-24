@@ -75,14 +75,44 @@ const TurnDisplay = ({ session, currentUser }) => {
     }
   };
 
-  if (!session || (session.status !== 'active' && session.status !== 'paused')) {
+  if (!session || (session.status !== 'active' && session.status !== 'paused' && session.status !== 'scheduled')) {
     return null;
   }
 
   const currentParticipant = session.participants?.find(p => p.position === session.currentParticipant - 1);
   const nextParticipant = session.participants?.find(p => p.position === session.currentParticipant);
+  
+  // Debug logging for participant finding
+  console.log('TurnDisplay - Participant Finding:', {
+    currentParticipantIndex: session.currentParticipant,
+    currentParticipantPosition: session.currentParticipant - 1,
+    currentParticipantFound: currentParticipant,
+    nextParticipantFound: nextParticipant,
+    allParticipants: session.participants?.map(p => ({
+      position: p.position,
+      name: `${p.user?.firstName} ${p.user?.lastName}`,
+      userId: p.user?._id
+    }))
+  });
   const isCurrentUserTurn = currentParticipant?.user?.id === currentUser?._id || currentParticipant?.user?._id === currentUser?._id;
   const isNextUserTurn = nextParticipant?.user?.id === currentUser?._id || nextParticipant?.user?._id === currentUser?._id;
+  
+  // Debug logging
+  console.log('TurnDisplay Debug:', {
+    sessionId: session.id || session._id,
+    status: session.status,
+    currentParticipant: session.currentParticipant,
+    currentParticipantData: currentParticipant,
+    nextParticipantData: nextParticipant,
+    currentUser: currentUser?._id,
+    isCurrentUserTurn,
+    isNextUserTurn,
+    participants: session.participants?.map(p => ({
+      position: p.position,
+      userId: p.user?._id,
+      name: `${p.user?.firstName} ${p.user?.lastName}`
+    }))
+  });
 
   const formatTime = (milliseconds) => {
     if (milliseconds <= 0) return '00:00';
