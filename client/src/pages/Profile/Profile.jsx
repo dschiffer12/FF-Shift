@@ -287,12 +287,12 @@ const Profile = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Profile Management</h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-3 text-gray-600">
             Manage your personal information and bid session preferences
           </p>
         </div>
@@ -309,15 +309,15 @@ const Profile = () => {
       </div>
       
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Information */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-8">
           {/* Personal Information */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Personal Information</h3>
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900">Personal Information</h3>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -521,10 +521,10 @@ const Profile = () => {
 
           {/* Emergency Contact */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Emergency Contact</h3>
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900">Emergency Contact</h3>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -573,10 +573,10 @@ const Profile = () => {
 
           {/* Current Bid Sessions */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Current Bid Sessions</h3>
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900">Current Bid Sessions</h3>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               {sessionsLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <LoadingSpinner size="md" />
@@ -584,7 +584,7 @@ const Profile = () => {
               ) : currentSessions.length > 0 ? (
                 <div className="space-y-4">
                   {currentSessions.map((session) => (
-                    <div key={session._id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div key={session._id} className="border rounded-xl p-6 hover:bg-gray-50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
@@ -707,13 +707,13 @@ const Profile = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Profile Summary */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Profile Summary</h3>
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900">Profile Summary</h3>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
@@ -775,10 +775,10 @@ const Profile = () => {
 
           {/* Bid Statistics */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Bid Statistics</h3>
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900">Bid Statistics</h3>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Total Bids</span>
@@ -810,10 +810,10 @@ const Profile = () => {
 
           {/* Bid Preferences */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Bid Preferences</h3>
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900">Bid Preferences</h3>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Preferred Shifts</span>
@@ -854,10 +854,10 @@ const Profile = () => {
 
           {/* Change Password */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Security</h3>
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900">Security</h3>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               {!isChangingPassword ? (
                 <Button
                   onClick={() => setIsChangingPassword(true)}

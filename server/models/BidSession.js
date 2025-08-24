@@ -262,7 +262,11 @@ bidSessionSchema.methods.addParticipant = function(userId, bidPriority) {
   });
   
   this.totalParticipants = this.participants.length;
-  return this.save();
+  return this.constructor.findOneAndUpdate(
+    { _id: this._id },
+    { $set: { totalParticipants: this.totalParticipants } },
+    { new: true }
+  );
 };
 
 // Method to start session
@@ -282,7 +286,20 @@ bidSessionSchema.methods.startSession = function() {
     details: 'Bid session started'
   });
   
-  return this.save();
+  return this.constructor.findOneAndUpdate(
+    { _id: this._id },
+    {
+      $set: {
+        status: this.status,
+        actualStart: this.actualStart,
+        currentParticipant: this.currentParticipant,
+        currentBidStart: this.currentBidStart,
+        currentBidEnd: this.currentBidEnd
+      },
+      $push: { sessionHistory: this.sessionHistory[this.sessionHistory.length - 1] }
+    },
+    { new: true }
+  );
 };
 
 // Method to pause session
@@ -295,7 +312,14 @@ bidSessionSchema.methods.pauseSession = function() {
     details: 'Bid session paused'
   });
   
-  return this.save();
+  return this.constructor.findOneAndUpdate(
+    { _id: this._id },
+    {
+      $set: { status: this.status },
+      $push: { sessionHistory: this.sessionHistory[this.sessionHistory.length - 1] }
+    },
+    { new: true }
+  );
 };
 
 // Method to resume session
@@ -309,7 +333,18 @@ bidSessionSchema.methods.resumeSession = function() {
     details: 'Bid session resumed'
   });
   
-  return this.save();
+  return this.constructor.findOneAndUpdate(
+    { _id: this._id },
+    {
+      $set: {
+        status: this.status,
+        currentBidStart: this.currentBidStart,
+        currentBidEnd: this.currentBidEnd
+      },
+      $push: { sessionHistory: this.sessionHistory[this.sessionHistory.length - 1] }
+    },
+    { new: true }
+  );
 };
 
 // Method to complete session
@@ -323,7 +358,17 @@ bidSessionSchema.methods.completeSession = function() {
     details: 'Bid session completed'
   });
   
-  return this.save();
+  return this.constructor.findOneAndUpdate(
+    { _id: this._id },
+    {
+      $set: {
+        status: this.status,
+        actualEnd: this.actualEnd
+      },
+      $push: { sessionHistory: this.sessionHistory[this.sessionHistory.length - 1] }
+    },
+    { new: true }
+  );
 };
 
 // Method to set current participant's time window

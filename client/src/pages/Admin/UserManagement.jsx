@@ -359,16 +359,16 @@ const UserManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-3 text-gray-600">
             Manage all users in the shift bidding system
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           <Button
             onClick={() => fetchUsers()}
             variant="secondary"
@@ -390,8 +390,8 @@ const UserManagement = () => {
 
       {/* Search and Filters */}
       <div className="card">
-        <div className="card-body">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="p-6">
+          <div className="flex flex-col md:flex-row gap-6">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -404,7 +404,7 @@ const UserManagement = () => {
                 />
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <Filter className="w-4 h-4 text-gray-400" />
               <select
                 value={selectedFilter}
@@ -428,9 +428,9 @@ const UserManagement = () => {
 
       {/* Users Table */}
       <div className="card">
-        <div className="card-header">
+        <div className="px-6 py-5 border-b border-rigroster-border">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className="text-xl font-medium text-gray-900">
               Users ({filteredUsers.length})
             </h3>
             <Button variant="secondary" size="sm">
@@ -439,13 +439,13 @@ const UserManagement = () => {
             </Button>
           </div>
         </div>
-        <div className="card-body">
+        <div className="p-6">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('name')}
                   >
                     <div className="flex items-center">
@@ -455,11 +455,11 @@ const UserManagement = () => {
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Contact
                   </th>
                   <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('rank')}
                   >
                     <div className="flex items-center">
@@ -470,7 +470,7 @@ const UserManagement = () => {
                     </div>
                   </th>
                   <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('seniority')}
                   >
                     <div className="flex items-center">
@@ -481,13 +481,13 @@ const UserManagement = () => {
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Station
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -495,7 +495,7 @@ const UserManagement = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredUsers.map((user) => (
                   <tr key={user._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-3 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                           <Users className="w-5 h-5 text-primary-600" />
@@ -510,15 +510,15 @@ const UserManagement = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-3 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{user.email}</div>
                       <div className="text-sm text-gray-500">{user.phone}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-3 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{user.rank}</div>
                       <div className="text-sm text-gray-500">{user.position}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-3 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
                         <div className="text-sm font-medium text-gray-900">
                           {calculateSeniorityScore(user)}
@@ -532,12 +532,12 @@ const UserManagement = () => {
                         {user.yearsOfService || 0} years
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-3 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(user)}`}>
                         {getStatusText(user)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex items-center space-x-2">
                         <Building2 className="w-4 h-4 text-gray-400" />
                         <div>
@@ -552,8 +552,8 @@ const UserManagement = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
+                    <td className="px-6 py-3 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-3">
                         <Button
                           onClick={() => handleViewUser(user)}
                           variant="ghost"

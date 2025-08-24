@@ -446,16 +446,16 @@ const Bidding = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Bidding Interface</h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-3 text-gray-600">
             Participate in bid sessions and manage your station assignments
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           <Button
             onClick={() => {
               fetchActiveSessions();
@@ -476,77 +476,77 @@ const Bidding = () => {
             Notifications
           </Button>
         </div>
-             </div>
+      </div>
 
-       {/* Prominent Bid Now Button */}
-       {isUserTurn && (
-         <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6 shadow-sm">
-           <div className="text-center">
-             <div className="flex items-center justify-center mb-4">
-               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mr-4">
-                 <Target className="w-8 h-8 text-green-600" />
-               </div>
-               <div className="text-left">
-                 <h2 className="text-2xl font-bold text-gray-900">It's Your Turn!</h2>
-                 <p className="text-gray-600">You can now place your bid for the current session</p>
-               </div>
-             </div>
-             <Button
-               variant="primary"
-               size="lg"
-               onClick={() => {
-                 setSelectedSession(currentActiveSession);
-                 setShowBidModal(true);
-               }}
-               className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold shadow-lg"
-             >
-               <Target className="w-6 h-6 mr-3" />
-               BID NOW
-             </Button>
-           </div>
-         </div>
-       )}
+      {/* Prominent Bid Now Button */}
+      {isUserTurn && (
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-8 shadow-sm">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mr-6">
+                <Target className="w-10 h-10 text-green-600" />
+              </div>
+              <div className="text-left">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">It's Your Turn!</h2>
+                <p className="text-lg text-gray-600">You can now place your bid for the current session</p>
+              </div>
+            </div>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => {
+                setSelectedSession(currentActiveSession);
+                setShowBidModal(true);
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-10 py-4 text-xl font-semibold shadow-lg"
+            >
+              <Target className="w-7 h-7 mr-3" />
+              BID NOW
+            </Button>
+          </div>
+        </div>
+      )}
 
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-8">
           {/* Current Status */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <Target className="w-5 h-5 mr-2" />
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900 flex items-center">
+                <Target className="w-6 h-6 mr-3" />
                 My Current Status
               </h3>
             </div>
-            <div className="card-body">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <Award className="w-6 h-6 text-primary-600" />
+                  <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Award className="w-8 h-8 text-primary-600" />
                   </div>
-                  <p className="text-sm text-gray-600">Bid Priority</p>
-                  <p className="text-lg font-bold text-gray-900">#{user?.bidPriority || 'N/A'}</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Bid Priority</p>
+                  <p className="text-xl font-bold text-gray-900">#{user?.bidPriority || 'N/A'}</p>
                 </div>
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <Star className="w-6 h-6 text-green-600" />
+                  <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Star className="w-8 h-8 text-green-600" />
                   </div>
-                  <p className="text-sm text-gray-600">Seniority</p>
-                  <p className="text-lg font-bold text-gray-900">{user?.seniorityScore || 'N/A'}</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Seniority</p>
+                  <p className="text-xl font-bold text-gray-900">{user?.seniorityScore || 'N/A'}</p>
                 </div>
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <Building2 className="w-6 h-6 text-blue-600" />
+                  <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Building2 className="w-8 h-8 text-blue-600" />
                   </div>
-                  <p className="text-sm text-gray-600">Current Station</p>
-                  <p className="text-lg font-bold text-gray-900">{user?.currentStation?.name || 'Unassigned'}</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Current Station</p>
+                  <p className="text-xl font-bold text-gray-900">{user?.currentStation?.name || 'Unassigned'}</p>
                 </div>
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <Clock className="w-6 h-6 text-purple-600" />
+                  <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Clock className="w-8 h-8 text-purple-600" />
                   </div>
-                  <p className="text-sm text-gray-600">Years of Service</p>
-                  <p className="text-lg font-bold text-gray-900">{user?.yearsOfService || 0}</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Years of Service</p>
+                  <p className="text-xl font-bold text-gray-900">{user?.yearsOfService || 0}</p>
                 </div>
               </div>
             </div>
@@ -554,66 +554,88 @@ const Bidding = () => {
 
           {/* Turn Display - Show when there's an active session */}
           {currentActiveSession && (
-            <TurnDisplay session={currentActiveSession} currentUser={user} />
+            <div className="card">
+              <div className="px-6 py-5 border-b border-rigroster-border">
+                <h3 className="text-xl font-medium text-gray-900 flex items-center">
+                  <Play className="w-6 h-6 mr-3" />
+                  Live Session Status
+                </h3>
+              </div>
+              <div className="p-6">
+                <TurnDisplay session={currentActiveSession} currentUser={user} />
+              </div>
+            </div>
           )}
 
           {/* Active Bid Sessions */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <Play className="w-5 h-5 mr-2" />
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900 flex items-center">
+                <Play className="w-6 h-6 mr-3" />
                 Active Bid Sessions
               </h3>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               {activeSessions.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {activeSessions.map((session) => (
-                    <div key={session.id || session._id} className="border rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                            <Calendar className="w-5 h-5 text-primary-600" />
+                    <div key={session.id || session._id} className="border rounded-xl p-6 hover:bg-gray-50 transition-colors duration-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                            <Calendar className="w-6 h-6 text-primary-600" />
                           </div>
                           <div>
-                            <h4 className="font-medium text-gray-900">{session.name}</h4>
-                            <p className="text-sm text-gray-500">{session.description}</p>
+                            <h4 className="text-lg font-medium text-gray-900 mb-1">{session.name}</h4>
+                            <p className="text-gray-500">{session.description}</p>
                           </div>
                         </div>
-                                                 <div className="flex items-center space-x-2">
-                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSessionStatusColor(session.status)}`}>
-                             {session.status}
-                           </span>
-                           {getSessionStatusIcon(session.status)}
-                         </div>
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="flex items-center">
-                          <Clock className="w-4 h-4 text-gray-400 mr-2" />
-                          <span className="text-gray-600">
-                            {formatDate(session.scheduledStart)} - {formatDate(session.scheduledEnd)}
+                        <div className="flex items-center space-x-3">
+                          <span className={`px-3 py-1 text-sm font-medium rounded-full ${getSessionStatusColor(session.status)}`}>
+                            {session.status}
                           </span>
-                        </div>
-                        <div className="flex items-center">
-                          <Users className="w-4 h-4 text-gray-400 mr-2" />
-                          <span className="text-gray-600">
-                            {session.participantCount || 0} participants
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <Building2 className="w-4 h-4 text-gray-400 mr-2" />
-                          <span className="text-gray-600">
-                            {session.availableStations || 0} stations available
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <Target className="w-4 h-4 text-gray-400 mr-2" />
-                          <span className="text-gray-600">
-                            {session.bidWindowDuration || 5} min windows
-                          </span>
+                          {getSessionStatusIcon(session.status)}
                         </div>
                       </div>
-                      <div className="mt-4 flex items-center justify-end space-x-2">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div className="flex items-center">
+                          <Clock className="w-5 h-5 text-gray-400 mr-3" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Schedule</p>
+                            <p className="text-xs text-gray-500">
+                              {formatDate(session.scheduledStart)} - {formatDate(session.scheduledEnd)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <Users className="w-5 h-5 text-gray-400 mr-3" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Participants</p>
+                            <p className="text-xs text-gray-500">
+                              {session.participantCount || 0} total
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <Building2 className="w-5 h-5 text-gray-400 mr-3" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Stations</p>
+                            <p className="text-xs text-gray-500">
+                              {session.availableStations || 0} available
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <Target className="w-5 h-5 text-gray-400 mr-3" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Time Window</p>
+                            <p className="text-xs text-gray-500">
+                              {session.bidWindowDuration || 5} minutes
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end space-x-3">
                         <Button
                           variant="secondary"
                           size="sm"
@@ -655,49 +677,49 @@ const Bidding = () => {
                     </div>
                   ))}
                 </div>
-                             ) : (
-                 <div className="text-center py-8">
-                   <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Sessions</h3>
-                   <p className="text-gray-600">
-                     There are no active, paused, or scheduled bid sessions at the moment. Check back later!
-                   </p>
-                 </div>
-               )}
+              ) : (
+                <div className="text-center py-12">
+                  <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-medium text-gray-900 mb-3">No Active Sessions</h3>
+                  <p className="text-gray-600 max-w-md mx-auto">
+                    There are no active, paused, or scheduled bid sessions at the moment. Check back later!
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Recent Bids */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <BarChart3 className="w-5 h-5 mr-2" />
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900 flex items-center">
+                <BarChart3 className="w-6 h-6 mr-3" />
                 Recent Bids
               </h3>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               {bidsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <LoadingSpinner size="md" />
+                <div className="flex items-center justify-center py-12">
+                  <LoadingSpinner size="lg" />
                 </div>
               ) : myBids.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Date
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Session
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Station
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Status
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Priority
                         </th>
                       </tr>
@@ -705,21 +727,21 @@ const Bidding = () => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {myBids.slice(0, 5).map((bid) => (
                         <tr key={bid._id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
                             {formatDate(bid.createdAt)}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
                             {bid.session?.name || 'N/A'}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
                             {bid.station?.name || 'N/A'}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
+                          <td className="px-6 py-3 whitespace-nowrap">
                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${getBidStatusColor(bid.status)}`}>
                               {bid.status || 'Unknown'}
                             </span>
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
                             #{bid.bidPriority || 'N/A'}
                           </td>
                         </tr>
@@ -741,35 +763,35 @@ const Bidding = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Quick Stats */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Bidding Stats</h3>
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900">Bidding Stats</h3>
             </div>
-            <div className="card-body">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Total Bids</span>
-                  <span className="font-medium text-gray-900">{myBids.length}</span>
+            <div className="p-6">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-600">Total Bids</span>
+                  <span className="text-lg font-bold text-gray-900">{myBids.length}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Successful</span>
-                  <span className="font-medium text-green-600">
+                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-600">Successful</span>
+                  <span className="text-lg font-bold text-green-600">
                     {myBids.filter(bid => bid.status === 'completed').length}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Success Rate</span>
-                  <span className="font-medium text-blue-600">
+                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-600">Success Rate</span>
+                  <span className="text-lg font-bold text-blue-600">
                     {myBids.length > 0 
                       ? Math.round((myBids.filter(bid => bid.status === 'completed').length / myBids.length) * 100)
                       : 0}%
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Active Sessions</span>
-                  <span className="font-medium text-orange-600">
+                <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-600">Active Sessions</span>
+                  <span className="text-lg font-bold text-orange-600">
                     {activeSessions.filter(s => s.status === 'active').length}
                   </span>
                 </div>

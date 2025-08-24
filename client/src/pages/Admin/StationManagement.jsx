@@ -217,16 +217,16 @@ const StationManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Station Management</h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-3 text-gray-600">
             Manage all fire stations and their capacity
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           <Button
             onClick={() => fetchStations()}
             variant="secondary"
@@ -249,8 +249,8 @@ const StationManagement = () => {
 
       {/* Search and Filters */}
       <div className="card">
-        <div className="card-body">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="p-6">
+          <div className="flex flex-col md:flex-row gap-6">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -263,7 +263,7 @@ const StationManagement = () => {
                 />
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <Filter className="w-4 h-4 text-gray-400" />
               <select
                 value={selectedFilter}
@@ -282,15 +282,15 @@ const StationManagement = () => {
       </div>
 
       {/* Stations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredStations.map((station) => (
           <div key={station._id || station.id} className="card hover:shadow-lg transition-shadow">
-            <div className="card-header">
+            <div className="px-6 py-5 border-b border-rigroster-border">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-primary-600" />
-                  </div>
+                                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-primary-600" />
+                    </div>
                   <div>
                     <h3 className="text-lg font-medium text-gray-900">{station.name}</h3>
                     <p className="text-sm text-gray-500">Station #{station.number}</p>
@@ -301,8 +301,8 @@ const StationManagement = () => {
                 </span>
               </div>
             </div>
-            <div className="card-body">
-              <div className="space-y-3">
+            <div className="p-6">
+              <div className="space-y-4">
                 <div className="flex items-center text-sm">
                   <MapPin className="w-4 h-4 text-gray-400 mr-2" />
                   <span className="text-gray-600 truncate">{station.address}</span>
@@ -341,7 +341,7 @@ const StationManagement = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end space-x-2 pt-2">
+                <div className="flex items-center justify-end space-x-3 pt-4">
                   <Button
                     onClick={() => handleViewStation(station)}
                     variant="ghost"

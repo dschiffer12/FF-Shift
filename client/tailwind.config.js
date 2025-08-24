@@ -6,17 +6,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // RigRoster Light Theme
         primary: {
           50: '#fef2f2',
           100: '#fee2e2',
           200: '#fecaca',
           300: '#fca5a5',
           400: '#f87171',
-          500: '#ef4444',
-          600: '#dc2626',
-          700: '#b91c1c',
-          800: '#991b1b',
-          900: '#7f1d1d',
+          500: '#C0392B', // RigRoster Red
+          600: '#A93226', // Darker Red
+          700: '#922B21',
+          800: '#7B241C',
+          900: '#641E16',
         },
         secondary: {
           50: '#f8fafc',
@@ -29,6 +30,19 @@ module.exports = {
           700: '#334155',
           800: '#1e293b',
           900: '#0f172a',
+        },
+        // Light theme colors
+        rigroster: {
+          red: '#C0392B',
+          darkRed: '#A93226',
+          lightGray: '#f8f9fa',
+          gray: '#6c757d',
+          darkGray: '#495057',
+          white: '#ffffff',
+          offWhite: '#f8f9fa',
+          border: '#dee2e6',
+          text: '#212529',
+          textLight: '#6c757d',
         },
         success: {
           50: '#f0fdf4',
@@ -68,41 +82,14 @@ module.exports = {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Poppins', 'system-ui', 'sans-serif'],
-      },
-      animation: {
-        'fade-in': 'fadeIn 0.5s ease-in-out',
-        'slide-up': 'slideUp 0.3s ease-out',
-        'slide-down': 'slideDown 0.3s ease-out',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'bounce-slow': 'bounce 2s infinite',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { transform: 'translateY(10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
-        slideDown: {
-          '0%': { transform: 'translateY(-10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
+        'sans': ['Inter', 'system-ui', 'sans-serif'],
+        'display': ['Poppins', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
-        'medium': '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        'large': '0 10px 40px -10px rgba(0, 0, 0, 0.15), 0 2px 10px -2px rgba(0, 0, 0, 0.04)',
-      },
-      backdropBlur: {
-        xs: '2px',
-      },
+        'rigroster': '0 4px 6px -1px rgba(192, 57, 43, 0.1), 0 2px 4px -1px rgba(192, 57, 43, 0.06)',
+        'rigroster-lg': '0 10px 15px -3px rgba(192, 57, 43, 0.1), 0 4px 6px -2px rgba(192, 57, 43, 0.05)',
+      }
     },
   },
-  plugins: [
-    require('@tailwindcss/forms'),
-  ],
+  plugins: [],
 }

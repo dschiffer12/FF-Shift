@@ -196,27 +196,27 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg shadow-lg">
-        <div className="px-6 py-8">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg">
+        <div className="px-8 py-10">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-white">
                 Welcome back, {user?.firstName}!
               </h1>
-              <p className="mt-2 text-primary-100">
+              <p className="mt-3 text-primary-100">
                 {user?.rank || 'N/A'} • {user?.position || 'N/A'} • Employee #{user?.employeeId || 'N/A'}
               </p>
-              <div className="mt-4 flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Building2 className="w-4 h-4 text-primary-200" />
+              <div className="mt-6 flex items-center space-x-6">
+                <div className="flex items-center space-x-3">
+                  <Building2 className="w-5 h-5 text-primary-200" />
                   <span className="text-primary-100 text-sm">
                     {user?.currentStation?.name || 'No station assigned'}
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4 text-primary-200" />
+                <div className="flex items-center space-x-3">
+                  <Clock className="w-5 h-5 text-primary-200" />
                   <span className="text-primary-100 text-sm">
                     Shift {user?.currentShift || 'N/A'}
                   </span>
@@ -224,8 +224,8 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="hidden sm:block">
-              <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <User className="w-8 h-8 text-white" />
+              <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <User className="w-10 h-10 text-white" />
               </div>
             </div>
           </div>
@@ -234,26 +234,26 @@ const Dashboard = () => {
 
       {/* Active Bid Session Alert */}
       {currentBidSession && (
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4">
+        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                <Timer className="w-5 h-5 text-yellow-600" />
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Timer className="w-6 h-6 text-yellow-600" />
               </div>
               <div>
-                <h3 className="font-medium text-yellow-900">
+                <h3 className="text-lg font-medium text-yellow-900">
                   Active Bid Session: {currentBidSession.name || 'Unnamed Session'}
                 </h3>
-                <p className="text-sm text-yellow-700">
+                <p className="text-sm text-yellow-700 mt-1">
                   {currentBidSession.description || 'No description available'}
                 </p>
-                <p className="text-xs text-yellow-600 mt-1">
+                <p className="text-xs text-yellow-600 mt-2">
                   Status: {currentBidSession.status} • Participants: {currentBidSession.participantCount || 0}
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-2 ${getBidStatusColor(currentBidSession.status)}`}>
+            <div className="flex items-center space-x-4">
+              <div className={`px-4 py-2 rounded-full text-sm font-medium flex items-center space-x-2 ${getBidStatusColor(currentBidSession.status)}`}>
                 {getBidStatusIcon(currentBidSession.status)}
                 <span className="capitalize">{currentBidSession.status}</span>
               </div>
@@ -272,17 +272,17 @@ const Dashboard = () => {
 
       {/* No Active Session Alert */}
       {!currentBidSession && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Clock className="w-5 h-5 text-blue-600" />
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Clock className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-medium text-blue-900">
+                <h3 className="text-lg font-medium text-blue-900">
                   No Active Bid Sessions
                 </h3>
-                <p className="text-sm text-blue-700">
+                <p className="text-sm text-blue-700 mt-1">
                   There are currently no active bid sessions. Check the bidding interface for available sessions.
                 </p>
               </div>
@@ -301,17 +301,17 @@ const Dashboard = () => {
 
       {/* User Turn Alert */}
       {userBidStatus?.isUserTurn && (
-        <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <h3 className="font-medium text-red-900">
+                <h3 className="text-lg font-medium text-red-900">
                   It's your turn to bid!
                 </h3>
-                <p className="text-sm text-red-700">
+                <p className="text-sm text-red-700 mt-1">
                   Time remaining: {formatTime(userBidStatus.timeRemaining)}
                 </p>
               </div>
@@ -329,20 +329,20 @@ const Dashboard = () => {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
             <div key={stat.name} className="card hover:shadow-lg transition-shadow">
-              <div className="card-body">
+              <div className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                      <Icon className={`w-6 h-6 ${stat.color}`} />
+                    <div className={`p-3 rounded-xl ${stat.bgColor}`}>
+                      <Icon className={`w-7 h-7 ${stat.color}`} />
                     </div>
-                    <div className="ml-4">
+                    <div className="ml-5">
                       <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
                     </div>
                   </div>
                   {stat.change && (
@@ -361,13 +361,13 @@ const Dashboard = () => {
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Current Bid Status */}
         <div className="lg:col-span-2">
           <div className="card">
-            <div className="card-header">
+            <div className="px-6 py-5 border-b border-rigroster-border">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">Current Bid Status</h3>
+                <h3 className="text-xl font-medium text-gray-900">Current Bid Status</h3>
                 <Button
                   onClick={fetchDashboardData}
                   variant="ghost"
@@ -377,47 +377,47 @@ const Dashboard = () => {
                 </Button>
               </div>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               {currentBidSession ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-3 h-3 rounded-full ${
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-4 h-4 rounded-full ${
                         currentBidSession.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'
                       }`}></div>
-                      <span className="font-medium text-gray-900">
+                      <span className="text-lg font-medium text-gray-900">
                         {currentBidSession.name || 'Unnamed Session'}
                       </span>
                     </div>
-                    <div className={`px-2 py-1 text-xs font-medium rounded-full ${getBidStatusColor(currentBidSession.status)}`}>
+                    <div className={`px-3 py-1 text-sm font-medium rounded-full ${getBidStatusColor(currentBidSession.status)}`}>
                       {currentBidSession.status}
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-2 gap-6 text-sm">
                     <div>
                       <span className="text-gray-600">Your Position:</span>
-                      <span className="ml-2 font-medium">
+                      <span className="ml-3 font-medium">
                         {userBidStatus?.position ? `#${userBidStatus.position}` : 'Not in queue'}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Participants:</span>
-                      <span className="ml-2 font-medium">{currentBidSession.participantCount || currentBidSession.participants?.length || 0}</span>
+                      <span className="ml-3 font-medium">{currentBidSession.participantCount || currentBidSession.participants?.length || 0}</span>
                     </div>
                     <div>
                       <span className="text-gray-600">Time Limit:</span>
-                      <span className="ml-2 font-medium">{formatTime((currentBidSession.bidWindowDuration || 5) * 60)}</span>
+                      <span className="ml-3 font-medium">{formatTime((currentBidSession.bidWindowDuration || 5) * 60)}</span>
                     </div>
                     <div>
                       <span className="text-gray-600">Session Period:</span>
-                      <span className="ml-2 font-medium">
+                      <span className="ml-3 font-medium">
                         {currentBidSession.scheduledStart ? new Date(currentBidSession.scheduledStart).toLocaleDateString() : 'N/A'} - {currentBidSession.scheduledEnd ? new Date(currentBidSession.scheduledEnd).toLocaleDateString() : 'N/A'}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="flex items-center justify-between pt-6 border-t border-rigroster-border">
                     <p className="text-sm text-gray-600">
                       {currentBidSession.description || 'No description available'}
                     </p>
@@ -432,10 +432,10 @@ const Dashboard = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Bid Session</h3>
-                  <p className="text-gray-600 mb-4">
+                <div className="text-center py-12">
+                  <Clock className="w-16 h-16 text-gray-400 mx-auto mb-6" />
+                  <h3 className="text-xl font-medium text-gray-900 mb-3">No Active Bid Session</h3>
+                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
                     There are currently no active bid sessions. Check back later or contact your administrator.
                   </p>
                   <Button
@@ -452,32 +452,32 @@ const Dashboard = () => {
         </div>
 
         {/* Notifications */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Notifications */}
           <div className="card">
-            <div className="card-header">
+            <div className="px-6 py-5 border-b border-rigroster-border">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">Notifications</h3>
-                <Bell className="w-5 h-5 text-gray-400" />
+                <h3 className="text-xl font-medium text-gray-900">Notifications</h3>
+                <Bell className="w-6 h-6 text-gray-400" />
               </div>
             </div>
-            <div className="card-body">
-              <div className="space-y-3 max-h-64 overflow-y-auto">
+            <div className="p-6">
+              <div className="space-y-4 max-h-64 overflow-y-auto">
                 {notifications.length > 0 ? (
                   notifications.slice(0, 5).map((notification, index) => (
-                    <div key={index} className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-primary-500 rounded-full mt-2"></div>
+                    <div key={index} className="flex items-start space-x-4">
+                      <div className="w-3 h-3 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-                        <p className="text-xs text-gray-500">{notification.message}</p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-gray-500 mt-1">{notification.message}</p>
+                        <p className="text-xs text-gray-400 mt-2">
                           {new Date(notification.timestamp).toLocaleString()}
                         </p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-center text-sm">No new notifications</p>
+                  <p className="text-gray-500 text-center text-sm py-4">No new notifications</p>
                 )}
               </div>
             </div>
@@ -485,42 +485,42 @@ const Dashboard = () => {
 
           {/* Recent Activity */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900">Recent Activity</h3>
             </div>
-            <div className="card-body">
-              <div className="space-y-3">
+            <div className="p-6">
+              <div className="space-y-4">
                 {recentActivity.length > 0 ? (
                   recentActivity.slice(0, 5).map((activity, index) => (
-                    <div key={index} className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                        {activity.type === 'login' && <User className="w-4 h-4 text-gray-600" />}
-                        {activity.type === 'bid' && <Award className="w-4 h-4 text-gray-600" />}
-                        {activity.type === 'profile' && <Settings className="w-4 h-4 text-gray-600" />}
+                    <div key={index} className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        {activity.type === 'login' && <User className="w-5 h-5 text-gray-600" />}
+                        {activity.type === 'bid' && <Award className="w-5 h-5 text-gray-600" />}
+                        {activity.type === 'profile' && <Settings className="w-5 h-5 text-gray-600" />}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">{activity.title}</p>
-                        <p className="text-xs text-gray-500">{activity.description}</p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-500 mt-1">{activity.description}</p>
+                        <p className="text-xs text-gray-400 mt-2">
                           {new Date(activity.timestamp).toLocaleString()}
                         </p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500" />
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-4">
+                      <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Profile Updated</p>
-                        <p className="text-xs text-gray-500">2 hours ago</p>
+                        <p className="text-xs text-gray-500 mt-1">2 hours ago</p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <Clock className="w-5 h-5 text-blue-500" />
+                    <div className="flex items-center space-x-4">
+                      <Clock className="w-6 h-6 text-blue-500 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Last Login</p>
-                        <p className="text-xs text-gray-500">Today at 8:30 AM</p>
+                        <p className="text-xs text-gray-500 mt-1">Today at 8:30 AM</p>
                       </div>
                     </div>
                   </div>
@@ -533,42 +533,42 @@ const Dashboard = () => {
 
       {/* Quick Links */}
       <div className="card">
-        <div className="card-header">
-          <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+        <div className="px-6 py-5 border-b border-rigroster-border">
+          <h3 className="text-xl font-medium text-gray-900">Quick Actions</h3>
         </div>
-        <div className="card-body">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <Button 
               variant="secondary" 
-              className="h-20 flex-col"
+              className="h-24 flex-col p-4"
               onClick={() => navigate('/profile')}
             >
-              <User className="w-6 h-6 mb-2" />
-              <span>Update Profile</span>
+              <User className="w-7 h-7 mb-3" />
+              <span className="text-sm">Update Profile</span>
             </Button>
             <Button 
               variant="secondary" 
-              className="h-20 flex-col"
+              className="h-24 flex-col p-4"
               onClick={() => navigate('/stations')}
             >
-              <Building2 className="w-6 h-6 mb-2" />
-              <span>View Stations</span>
+              <Building2 className="w-7 h-7 mb-3" />
+              <span className="text-sm">View Stations</span>
             </Button>
             <Button 
               variant="secondary" 
-              className="h-20 flex-col"
+              className="h-24 flex-col p-4"
               onClick={() => navigate('/bid-history')}
             >
-              <FileText className="w-6 h-6 mb-2" />
-              <span>Bid History</span>
+              <FileText className="w-7 h-7 mb-3" />
+              <span className="text-sm">Bid History</span>
             </Button>
             <Button 
               variant="secondary" 
-              className="h-20 flex-col"
+              className="h-24 flex-col p-4"
               onClick={() => navigate('/seniority')}
             >
-              <BarChart3 className="w-6 h-6 mb-2" />
-              <span>Seniority Info</span>
+              <BarChart3 className="w-7 h-7 mb-3" />
+              <span className="text-sm">Seniority Info</span>
             </Button>
           </div>
         </div>
@@ -576,21 +576,21 @@ const Dashboard = () => {
 
       {/* System Status */}
       <div className="card">
-        <div className="card-header">
-          <h3 className="text-lg font-medium text-gray-900">System Status</h3>
+        <div className="px-6 py-5 border-b border-rigroster-border">
+          <h3 className="text-xl font-medium text-gray-900">System Status</h3>
         </div>
-        <div className="card-body">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
               <span className="text-sm text-gray-600">Bidding System</span>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+            <div className="flex items-center space-x-4">
+              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
               <span className="text-sm text-gray-600">Real-time Updates</span>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+            <div className="flex items-center space-x-4">
+              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
               <span className="text-sm text-gray-600">Database</span>
             </div>
           </div>

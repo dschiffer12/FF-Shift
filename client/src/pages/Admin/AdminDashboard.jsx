@@ -318,18 +318,18 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-3 text-gray-600">
             Welcome back, {user?.firstName}. Here's what's happening with your shift bidding system.
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <span className="text-sm text-gray-600">
               {isConnected ? 'Connected' : 'Disconnected'}
             </span>
@@ -354,21 +354,21 @@ const AdminDashboard = () => {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-8">
         {/* Total Users */}
         <div className="card">
-          <div className="card-body">
+          <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalUsers}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-blue-600" />
+              <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
+                <Users className="w-7 h-7 text-blue-600" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+            <div className="mt-5 flex items-center text-sm">
+              <TrendingUp className="w-4 h-4 text-green-500 mr-2" />
               <span className="text-green-600">+12% from last month</span>
             </div>
           </div>
@@ -376,18 +376,18 @@ const AdminDashboard = () => {
 
         {/* Active Users */}
         <div className="card">
-          <div className="card-body">
+          <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Active Users</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.activeUsers}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.activeUsers}</p>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <Activity className="w-6 h-6 text-green-600" />
+              <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
+                <Activity className="w-7 h-7 text-green-600" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+            <div className="mt-5 flex items-center text-sm">
+              <TrendingUp className="w-4 h-4 text-green-500 mr-2" />
               <span className="text-green-600">+8% from last week</span>
             </div>
           </div>
@@ -395,17 +395,17 @@ const AdminDashboard = () => {
 
         {/* Total Stations */}
         <div className="card">
-          <div className="card-body">
+          <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Stations</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalStations}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalStations}</p>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-purple-600" />
+              <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center">
+                <Building2 className="w-7 h-7 text-purple-600" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-sm">
+            <div className="mt-5 flex items-center text-sm">
               <span className="text-gray-500">No change</span>
             </div>
           </div>
@@ -413,18 +413,18 @@ const AdminDashboard = () => {
 
         {/* Active Bid Sessions */}
         <div className="card">
-          <div className="card-body">
+          <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Active Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.activeBidSessions}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.activeBidSessions}</p>
               </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-orange-600" />
+              <div className="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center">
+                <Clock className="w-7 h-7 text-orange-600" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+            <div className="mt-5 flex items-center text-sm">
+              <TrendingUp className="w-4 h-4 text-green-500 mr-2" />
               <span className="text-green-600">+2 this week</span>
             </div>
           </div>
@@ -432,18 +432,18 @@ const AdminDashboard = () => {
 
         {/* Completed Sessions */}
         <div className="card">
-          <div className="card-body">
+          <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.completedBidSessions}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.completedBidSessions}</p>
               </div>
-              <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <Award className="w-6 h-6 text-indigo-600" />
+              <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center">
+                <Award className="w-7 h-7 text-indigo-600" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+            <div className="mt-5 flex items-center text-sm">
+              <TrendingUp className="w-4 h-4 text-green-500 mr-2" />
               <span className="text-green-600">+15% this month</span>
             </div>
           </div>
@@ -451,18 +451,18 @@ const AdminDashboard = () => {
 
         {/* Pending Approvals */}
         <div className="card">
-          <div className="card-body">
+          <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.pendingApprovals}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.pendingApprovals}</p>
               </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-yellow-600" />
+              <div className="w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center">
+                <AlertTriangle className="w-7 h-7 text-yellow-600" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-sm">
-              <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
+            <div className="mt-5 flex items-center text-sm">
+              <TrendingDown className="w-4 h-4 text-red-500 mr-2" />
               <span className="text-red-600">-3 from yesterday</span>
             </div>
           </div>
@@ -472,16 +472,16 @@ const AdminDashboard = () => {
       {/* Active Bid Windows Section */}
       {activeBidWindows.length > 0 && (
         <div className="card">
-          <div className="card-header">
+          <div className="px-6 py-5 border-b border-rigroster-border">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Active Bid Windows</h3>
+              <h3 className="text-xl font-medium text-gray-900">Active Bid Windows</h3>
               <span className="text-sm text-gray-500">
                 {activeBidWindows.length} active session{activeBidWindows.length !== 1 ? 's' : ''}
               </span>
             </div>
           </div>
-          <div className="card-body">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {activeBidWindows.map((session) => (
                 <div key={session.id} className="border rounded-lg p-4 bg-gradient-to-r from-green-50 to-blue-50">
                   <div className="flex items-center justify-between mb-3">

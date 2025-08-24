@@ -84,11 +84,11 @@ const BidPreferences = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-        <div className="flex items-center justify-between mb-6">
+      <div className="relative top-10 mx-auto p-6 border w-full max-w-2xl shadow-xl rounded-xl bg-white">
+        <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Bid Preferences</h2>
-            <p className="text-gray-600">Customize your bidding experience</p>
+            <p className="mt-2 text-gray-600">Customize your bidding experience</p>
           </div>
           <Button
             onClick={onClose}
@@ -99,16 +99,16 @@ const BidPreferences = ({ onClose }) => {
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* Preferred Shifts */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <Clock className="w-5 h-5 mr-2" />
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900 flex items-center">
+                <Clock className="w-6 h-6 mr-3" />
                 Preferred Shifts
               </h3>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               <div className="grid grid-cols-2 gap-4">
                 {['Day', 'Night', 'Swing', '24/48', '48/96'].map((shift) => (
                   <label key={shift} className="flex items-center">
@@ -127,13 +127,13 @@ const BidPreferences = ({ onClose }) => {
 
           {/* Preferred Stations */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <Building2 className="w-5 h-5 mr-2" />
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900 flex items-center">
+                <Building2 className="w-6 h-6 mr-3" />
                 Preferred Stations
               </h3>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               <div className="grid grid-cols-2 gap-4">
                 {['Station 1', 'Station 2', 'Station 3', 'Station 4', 'Station 5', 'Station 6'].map((station) => (
                   <label key={station} className="flex items-center">
@@ -152,13 +152,13 @@ const BidPreferences = ({ onClose }) => {
 
           {/* Auto-Bid Settings */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <Target className="w-5 h-5 mr-2" />
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900 flex items-center">
+                <Target className="w-6 h-6 mr-3" />
                 Auto-Bid Settings
               </h3>
             </div>
-            <div className="card-body space-y-4">
+            <div className="p-6 space-y-6">
               <div className="flex items-center justify-between">
                 <div>
                   <label className="text-sm font-medium text-gray-700">Enable Auto-Bid</label>
@@ -224,13 +224,13 @@ const BidPreferences = ({ onClose }) => {
 
           {/* Notification Settings */}
           <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <Bell className="w-5 h-5 mr-2" />
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900 flex items-center">
+                <Bell className="w-6 h-6 mr-3" />
                 Notification Settings
               </h3>
             </div>
-            <div className="card-body space-y-4">
+            <div className="p-6 space-y-6">
               <div className="flex items-center justify-between">
                 <div>
                   <label className="text-sm font-medium text-gray-700">Enable Notifications</label>
@@ -276,7 +276,7 @@ const BidPreferences = ({ onClose }) => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end space-x-3 pt-6 border-t">
+          <div className="flex items-center justify-end space-x-4 pt-8 border-t border-rigroster-border">
             <Button
               type="button"
               variant="secondary"

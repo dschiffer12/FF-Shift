@@ -14,12 +14,12 @@ const Button = ({
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200';
   
   const variants = {
-    primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 disabled:bg-primary-400',
-    secondary: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-primary-500 disabled:bg-gray-100 disabled:text-gray-400',
+    primary: 'bg-rigroster-red text-white hover:bg-primary-600 focus:ring-rigroster-red disabled:bg-gray-600',
+    secondary: 'bg-rigroster-darkGray text-white border border-gray-600 hover:bg-gray-700 focus:ring-rigroster-red disabled:bg-gray-800 disabled:text-gray-400',
     success: 'bg-success-600 text-white hover:bg-success-700 focus:ring-success-500 disabled:bg-success-400',
     warning: 'bg-warning-600 text-white hover:bg-warning-700 focus:ring-warning-500 disabled:bg-warning-400',
-    danger: 'bg-danger-600 text-white hover:bg-danger-700 focus:ring-danger-500 disabled:bg-danger-400',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-primary-500 disabled:bg-transparent disabled:text-gray-400',
+    danger: 'bg-rigroster-red text-white hover:bg-primary-600 focus:ring-rigroster-red disabled:bg-gray-600',
+    ghost: 'bg-transparent text-gray-300 hover:bg-gray-700 focus:ring-rigroster-red disabled:bg-transparent disabled:text-gray-500',
   };
 
   const sizes = {
