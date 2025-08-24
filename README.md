@@ -75,6 +75,4 @@ ff-shift-bid/
 └── README.md
 ```
 
-## License
 
-MIT License - see LICENSE file for details.
