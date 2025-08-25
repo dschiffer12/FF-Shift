@@ -29,6 +29,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "vercel-build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -55,6 +56,5 @@
     "cross-env": "^10.0.0",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6"
-  },
-  "proxy": "http://localhost:5000"
+  }
 }
