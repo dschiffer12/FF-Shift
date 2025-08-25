@@ -49,6 +49,12 @@ const Bidding = () => {
   // Check if current user can bid
   const canUserBid = currentActiveSession && 
     (currentActiveSession.status === 'active' || currentActiveSession.status === 'paused') && 
+    currentActiveSession.participants?.length > 0 &&
+    currentActiveSession.currentParticipant > 0 &&
+    currentActiveSession.currentParticipant <= currentActiveSession.participants.length &&
+    currentActiveSession.participants?.some(p => 
+      (p.user?.id === user?._id || p.user?._id === user?._id)
+    ) &&
     currentActiveSession.participants?.some(p => 
       (p.user?.id === user?._id || p.user?._id === user?._id) && 
       p.position === (currentActiveSession.currentParticipant - 1)
@@ -57,29 +63,17 @@ const Bidding = () => {
   // Check if it's the user's turn
   const isUserTurn = currentActiveSession && 
     (currentActiveSession.status === 'active' || currentActiveSession.status === 'paused') && 
+    currentActiveSession.participants?.length > 0 &&
+    currentActiveSession.currentParticipant > 0 &&
+    currentActiveSession.currentParticipant <= currentActiveSession.participants.length &&
+    currentActiveSession.participants?.some(p => 
+      (p.user?.id === user?._id || p.user?._id === user?._id)
+    ) &&
     currentActiveSession.participants?.some(p => 
       (p.user?.id === user?._id || p.user?._id === user?._id) && 
       p.position === (currentActiveSession.currentParticipant - 1)
     );
     
-  // Debug logging for turn detection
-  console.log('Bidding Component - Turn Detection:', {
-    currentActiveSession: currentActiveSession ? {
-      id: currentActiveSession.id || currentActiveSession._id,
-      status: currentActiveSession.status,
-      currentParticipant: currentActiveSession.currentParticipant
-    } : null,
-    currentUser: user?._id,
-    canUserBid,
-    isUserTurn,
-    participants: currentActiveSession?.participants?.map(p => ({
-      position: p.position,
-      userId: p.user?._id,
-      name: `${p.user?.firstName} ${p.user?.lastName}`,
-      isCurrentUser: (p.user?.id === user?._id || p.user?._id === user?._id)
-    }))
-  });
-
   useEffect(() => {
     fetchActiveSessions();
     fetchMyBids();
@@ -232,7 +226,8 @@ const Bidding = () => {
   const fetchActiveSessions = async () => {
     try {
       setLoading(true);
-      const response = await api.get(endpoints.bidSessions.current);
+      // Use the index endpoint to get all sessions, then filter for active ones
+      const response = await api.get(endpoints.bidSessions.list);
       const allSessions = response.data.sessions || [];
       
       // Filter to only show active, paused, or scheduled sessions
@@ -246,18 +241,6 @@ const Bidding = () => {
       const activeSession = sessions.find(s => s.status === 'active' || s.status === 'paused');
       setCurrentActiveSession(activeSession);
       
-      // Debug logging
-      console.log('Bidding Component - Fetched sessions:', {
-        totalSessions: sessions.length,
-        activeSession: activeSession,
-        sessions: sessions.map(s => ({
-          id: s.id || s._id,
-          name: s.name,
-          status: s.status,
-          currentParticipant: s.currentParticipant,
-          participantCount: s.participantCount
-        }))
-      });
     } catch (error) {
       console.error('Error fetching active sessions:', error);
       toast.error('Failed to load active sessions');

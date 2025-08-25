@@ -14,7 +14,9 @@ import {
   Timer,
   User,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -26,10 +28,11 @@ const LiveBidding = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { socket } = useSocket();
+  const { socket, isConnected } = useSocket();
   
   const [session, setSession] = useState(null);
   const [participants, setParticipants] = useState([]);
+  const [connectedUsers, setConnectedUsers] = useState([]);
   const [currentParticipant, setCurrentParticipant] = useState(null);
   const [myTurn, setMyTurn] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
@@ -53,9 +56,25 @@ const LiveBidding = () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
+      // Leave the bid session room when component unmounts
+      if (socket && isConnected) {
+        socket.emit('leave_bid_session', sessionId);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
+
+  // Add current user to connected users list when component mounts
+  useEffect(() => {
+    if (user && !connectedUsers.find(u => u.id === user._id)) {
+      setConnectedUsers(prev => [...prev, {
+        id: user._id,
+        name: `${user.firstName} ${user.lastName}`,
+        rank: user.rank,
+        position: user.position
+      }]);
+    }
+  }, [user, connectedUsers]);
 
   useEffect(() => {
     if (timeRemaining > 0) {
@@ -82,18 +101,31 @@ const LiveBidding = () => {
       setLoading(true);
       const response = await api.get(endpoints.bidSessions.detail(sessionId));
       console.log('Session data response:', response.data);
-      setSession(response.data.bidSession);
-      setParticipants(response.data.participants || []);
-      setCurrentParticipant(response.data.currentParticipant);
+      
+      // Handle the API response structure
+      const sessionData = response.data.bidSession || response.data;
+      setSession(sessionData);
+      
+      // Extract participants from the session data
+      const sessionParticipants = sessionData.participants || [];
+      setParticipants(sessionParticipants);
+      
+      // Set current participant
+      setCurrentParticipant(sessionData.currentParticipant || 1);
+      
+      // Set available stations
       setAvailableStations(response.data.availableStations || []);
-      console.log('Available stations:', response.data.availableStations);
       
       // Check if it's user's turn
-      const myParticipant = response.data.participants?.find(p => p.user._id === user._id);
-      if (myParticipant && myParticipant.position === response.data.currentParticipant) {
+      const myParticipant = sessionParticipants.find(p => 
+        p.user?._id === user._id || p.user?.id === user._id
+      );
+      if (myParticipant && myParticipant.position === (sessionData.currentParticipant - 1)) {
         setMyTurn(true);
         setTimeRemaining(myParticipant.timeWindow?.duration || 300); // 5 minutes default
       }
+      
+      console.log('Available stations:', response.data.availableStations);
     } catch (error) {
       console.error('Error fetching session data:', error);
       toast.error('Failed to load session data');
@@ -104,6 +136,49 @@ const LiveBidding = () => {
 
   const setupSocketListeners = () => {
     if (!socket) return;
+
+    // Join the bid session room
+    socket.emit('join_bid_session', { sessionId });
+
+    socket.on('bid_session_joined', (data) => {
+      console.log('Joined bid session:', data);
+      if (data.session) {
+        setSession(data.session);
+        setParticipants(data.participants || []);
+        setCurrentParticipant(data.currentParticipant?.position || 1);
+      }
+    });
+
+    socket.on('connected_users_list', (data) => {
+      console.log('Received connected users list:', data);
+      if (data.sessionId === sessionId) {
+        setConnectedUsers(data.users || []);
+      }
+    });
+
+    socket.on('user_joined_session', (data) => {
+      console.log('User joined session:', data);
+      setConnectedUsers(prev => {
+        const existing = prev.find(u => u.id === data.user.id);
+        if (!existing) {
+          return [...prev, data.user];
+        }
+        return prev;
+      });
+      toast(`${data.user.name} joined the session`);
+    });
+
+    socket.on('user_left_session', (data) => {
+      console.log('User left session:', data);
+      setConnectedUsers(prev => prev.filter(u => u.id !== data.userId));
+      toast(`${data.userName} left the session`);
+    });
+
+    socket.on('user_disconnected', (data) => {
+      console.log('User disconnected:', data);
+      setConnectedUsers(prev => prev.filter(u => u.id !== data.userId));
+      toast(`${data.userName} disconnected`);
+    });
 
     socket.on('bid-session-updated', (data) => {
       if (data.sessionId === sessionId) {
@@ -146,7 +221,15 @@ const LiveBidding = () => {
       }
     });
 
+    // Request initial connected users
+    socket.emit('request_connected_users', { sessionId });
+
     return () => {
+      socket.off('bid_session_joined');
+      socket.off('connected_users_list');
+      socket.off('user_joined_session');
+      socket.off('user_left_session');
+      socket.off('user_disconnected');
       socket.off('bid-session-updated');
       socket.off('turn-started');
       socket.off('turn-ended');
@@ -228,8 +311,6 @@ const LiveBidding = () => {
     }
   };
 
-
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -241,6 +322,16 @@ const LiveBidding = () => {
           </p>
         </div>
         <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            {isConnected ? (
+              <Wifi className="w-5 h-5 text-green-500" />
+            ) : (
+              <WifiOff className="w-5 h-5 text-red-500" />
+            )}
+            <span className={`text-sm font-medium ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+              {isConnected ? 'Connected' : 'Disconnected'}
+            </span>
+          </div>
           <Button
             onClick={() => fetchSessionData()}
             variant="secondary"
@@ -368,7 +459,7 @@ const LiveBidding = () => {
                 <div className="space-y-4">
                   {participants.map((participant, index) => (
                     <div 
-                      key={participant._id} 
+                      key={participant._id || participant.id} 
                       className={`flex items-center justify-between p-4 rounded-xl border transition-colors duration-200 ${
                         index === (currentParticipant - 1) 
                           ? 'bg-green-50 border-green-200' 
@@ -410,6 +501,44 @@ const LiveBidding = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            {/* Connected Users */}
+            <div className="card">
+              <div className="px-6 py-5 border-b border-rigroster-border">
+                <h3 className="text-xl font-medium text-gray-900 flex items-center">
+                  <Wifi className="w-6 h-6 mr-3" />
+                  Connected Users ({connectedUsers.length})
+                </h3>
+              </div>
+              <div className="p-6">
+                {connectedUsers.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {connectedUsers.map((connectedUser) => (
+                      <div 
+                        key={connectedUser.id} 
+                        className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-200"
+                      >
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                          <User className="w-4 h-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{connectedUser.name}</p>
+                          <p className="text-sm text-gray-500">{connectedUser.rank || 'N/A'}</p>
+                        </div>
+                        <div className="ml-auto">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <Wifi className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-500">No users currently connected</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

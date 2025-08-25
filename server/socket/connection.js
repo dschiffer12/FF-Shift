@@ -60,6 +60,28 @@ const handleSocketConnection = (socket, io) => {
     });
   });
 
+  // Handle request for connected users in a session
+  socket.on('request_connected_users', (data) => {
+    const { sessionId } = data;
+    if (bidSessionRooms.has(sessionId)) {
+      const connectedUserIds = Array.from(bidSessionRooms.get(sessionId));
+      const connectedUsers = connectedUserIds
+        .map(userId => activeConnections.get(userId))
+        .filter(connection => connection) // Filter out any undefined connections
+        .map(connection => ({
+          id: connection.user._id,
+          name: connection.user.fullName,
+          rank: connection.user.rank,
+          position: connection.user.position
+        }));
+      
+      socket.emit('connected_users_list', {
+        sessionId,
+        users: connectedUsers
+      });
+    }
+  });
+
   // Handle bid submission
   socket.on('submit_bid', async (data) => {
     try {
@@ -326,7 +348,7 @@ const handleSocketConnection = (socket, io) => {
     // Remove from active connections
     activeConnections.delete(socket.user._id.toString());
     
-    // Remove from bid session rooms
+    // Remove from bid session rooms and notify others
     bidSessionRooms.forEach((users, sessionId) => {
       if (users.has(socket.user._id.toString())) {
         users.delete(socket.user._id.toString());
@@ -400,6 +422,23 @@ const joinUserToBidSession = async (socket, sessionId, io) => {
       rank: socket.user.rank,
       position: socket.user.position
     }
+  });
+
+  // Send current connected users to the new user
+  const connectedUserIds = Array.from(bidSessionRooms.get(sessionId));
+  const connectedUsers = connectedUserIds
+    .map(userId => activeConnections.get(userId))
+    .filter(connection => connection && connection.user._id.toString() !== socket.user._id.toString()) // Exclude self
+    .map(connection => ({
+      id: connection.user._id,
+      name: connection.user.fullName,
+      rank: connection.user.rank,
+      position: connection.user.position
+    }));
+  
+  socket.emit('connected_users_list', {
+    sessionId,
+    users: connectedUsers
   });
 };
 

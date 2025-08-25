@@ -20,9 +20,20 @@ const Login = () => {
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password);
+      const result = await login(data.email, data.password);
+      
+      // Handle login result
+      if (!result.success) {
+        console.error('Login failed:', result.error);
+      }
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Ensure error is properly handled
+      if (error && typeof error === 'object') {
+        const message = error.message || error.error || 'Login failed';
+        console.error('Login error message:', message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -69,7 +80,11 @@ const Login = () => {
                 />
               </div>
               {errors.email && (
-                <p className="mt-1 text-sm text-danger-600">{errors.email.message}</p>
+                <p className="mt-1 text-sm text-danger-600">
+                  {typeof errors.email === 'object' && errors.email.message 
+                    ? errors.email.message 
+                    : errors.email}
+                </p>
               )}
             </div>
 
@@ -108,7 +123,11 @@ const Login = () => {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-danger-600">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-danger-600">
+                  {typeof errors.password === 'object' && errors.password.message 
+                    ? errors.password.message 
+                    : errors.password}
+                </p>
               )}
             </div>
 

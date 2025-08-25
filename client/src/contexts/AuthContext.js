@@ -69,8 +69,16 @@ export const AuthProvider = ({ children }) => {
         dispatch({ type: AUTH_ACTIONS.SET_USER, payload: response.data.user });
       } catch (error) {
         console.error('Auth check failed:', error);
+        
+        // Clear invalid tokens
         localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        
+        // Logout user
         dispatch({ type: AUTH_ACTIONS.LOGOUT });
+        
+        // Don't show error toast for auth check failures
+        // as this might happen on app load
       }
     };
 
@@ -100,7 +108,17 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       
-      const message = error.response?.data?.error || 'Login failed';
+      // Handle different types of error responses
+      let message = 'Login failed';
+      
+      if (error.response?.data?.error) {
+        message = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      }
+      
       toast.error(message);
       
       return { success: false, error: message };
@@ -130,7 +148,17 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       
-      const message = error.response?.data?.error || 'Registration failed';
+      // Handle different types of error responses
+      let message = 'Registration failed';
+      
+      if (error.response?.data?.error) {
+        message = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      }
+      
       toast.error(message);
       
       return { success: false, error: message };

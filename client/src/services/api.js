@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
+  baseURL: process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000'),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -41,7 +41,7 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
           const response = await axios.post(
-            `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/refresh`,
+            `${process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000')}/api/auth/refresh`,
             { refreshToken }
           );
 
@@ -61,8 +61,21 @@ api.interceptors.response.use(
         // If refresh fails, redirect to login
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        
+        // Only redirect if we're not already on the login page
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        
         return Promise.reject(refreshError);
+      }
+    }
+
+    // Ensure error is properly formatted
+    if (error.response?.data && typeof error.response.data === 'object') {
+      // Ensure error object has proper structure
+      if (!error.response.data.error && error.response.data.message) {
+        error.response.data.error = error.response.data.message;
       }
     }
 

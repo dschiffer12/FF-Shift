@@ -236,6 +236,27 @@ export const SocketProvider = ({ children }) => {
       console.log('Turn updated:', data);
     });
 
+    // Connected users events
+    newSocket.on('user_joined_session', (data) => {
+      console.log('User joined session:', data);
+      // This will be handled by the LiveBidding component
+    });
+
+    newSocket.on('user_left_session', (data) => {
+      console.log('User left session:', data);
+      // This will be handled by the LiveBidding component
+    });
+
+    newSocket.on('user_disconnected', (data) => {
+      console.log('User disconnected:', data);
+      // This will be handled by the LiveBidding component
+    });
+
+    newSocket.on('connected_users_list', (data) => {
+      console.log('Connected users list received:', data);
+      // This will be handled by the LiveBidding component
+    });
+
     // Bid events
     newSocket.on('bid-received', (data) => {
       toast.success(`Bid received for ${data.station} - ${data.shift} shift`);
