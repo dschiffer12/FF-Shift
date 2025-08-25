@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        const response = await api.get('/api/auth/me');
+        const response = await api.get('/auth/me');
         dispatch({ type: AUTH_ACTIONS.SET_USER, payload: response.data.user });
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -90,7 +90,7 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       
-      const response = await api.post('/api/auth/login', { email, password });
+      const response = await api.post('/auth/login', { email, password });
       const { user, token, refreshToken } = response.data;
 
       // Store tokens
@@ -121,6 +121,7 @@ export const AuthProvider = ({ children }) => {
       
       toast.error(message);
       
+      // Return a simple object, not the error object
       return { success: false, error: message };
     }
   };
@@ -130,7 +131,7 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       
-      const response = await api.post('/api/auth/register', userData);
+      const response = await api.post('/auth/register', userData);
       const { user, token, refreshToken } = response.data;
 
       // Store tokens
@@ -161,6 +162,7 @@ export const AuthProvider = ({ children }) => {
       
       toast.error(message);
       
+      // Return a simple object, not the error object
       return { success: false, error: message };
     }
   };

@@ -23,13 +23,13 @@ const Login = () => {
       const result = await login(data.email, data.password);
       
       // Handle login result
-      if (!result.success) {
-        console.error('Login failed:', result.error);
+      if (!result || !result.success) {
+        console.error('Login failed:', result?.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Login error:', error);
       
-      // Ensure error is properly handled
+      // Ensure error is properly handled and not rendered
       if (error && typeof error === 'object') {
         const message = error.message || error.error || 'Login failed';
         console.error('Login error message:', message);

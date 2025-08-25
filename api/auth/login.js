@@ -15,6 +15,17 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // Check environment variables
+    if (!process.env.MONGODB_URI) {
+      console.error('MONGODB_URI environment variable is not set');
+      return res.status(500).json({ error: 'Database configuration error' });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET environment variable is not set');
+      return res.status(500).json({ error: 'Authentication configuration error' });
+    }
+
     await connectDB();
 
     const { email, password } = req.body;
@@ -60,6 +71,16 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
+    
+    // Provide more specific error messages
+    if (error.name === 'MongoNetworkError') {
+      return res.status(500).json({ error: 'Database connection failed' });
+    }
+    
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: 'Invalid data provided' });
+    }
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 };

@@ -1,65 +1,81 @@
 const axios = require('axios');
 
-// Replace with your actual Vercel app URL
-const VERCEL_URL = 'https://your-vercel-app-name.vercel.app';
+const VERCEL_URL = 'https://ff-shift.vercel.app';
 
-async function testDeployment() {
-  console.log('Testing Vercel deployment...\n');
+async function testVercelDeployment() {
+  console.log('🔍 Testing Vercel Deployment\n');
+  console.log('='.repeat(50));
 
   try {
-    // Test simple endpoint
-    console.log('1. Testing simple endpoint...');
-    const testResponse = await axios.get(`${VERCEL_URL}/api/test`);
-    console.log('✅ Test endpoint working:', testResponse.data);
-    console.log('');
-
-    // Test health endpoint
-    console.log('2. Testing health endpoint...');
-    const healthResponse = await axios.get(`${VERCEL_URL}/api/health`);
-    console.log('✅ Health endpoint working:', healthResponse.data);
-    console.log('');
-
-    // Test login endpoint (should return 400 for missing credentials)
-    console.log('3. Testing login endpoint...');
+    // Test 1: Health endpoint
+    console.log('1. Testing health endpoint...');
     try {
-      await axios.post(`${VERCEL_URL}/api/auth/login`, {});
+      const healthResponse = await axios.get(`${VERCEL_URL}/api/health`);
+      console.log('✅ Health endpoint working:', healthResponse.data);
     } catch (error) {
-      if (error.response?.status === 400) {
-        console.log('✅ Login endpoint working (correctly rejected empty request)');
+      console.log('❌ Health endpoint failed:', error.response?.status, error.response?.data);
+    }
+
+    // Test 2: Simple API test
+    console.log('\n2. Testing simple API endpoint...');
+    try {
+      const simpleResponse = await axios.get(`${VERCEL_URL}/api/simple-test`);
+      console.log('✅ Simple API test successful:', simpleResponse.data);
+    } catch (error) {
+      console.log('❌ Simple API test failed:', error.response?.status);
+      if (error.response?.data && typeof error.response.data === 'string' && error.response.data.includes('<!doctype html>')) {
+        console.log('   Issue: API endpoint returning HTML instead of JSON');
       } else {
-        console.log('❌ Login endpoint error:', error.response?.data);
+        console.log('   Error:', error.response?.data);
       }
     }
-    console.log('');
 
-    // Test registration endpoint (should return 400 for missing credentials)
-    console.log('4. Testing registration endpoint...');
+    // Test 3: Database test endpoint
+    console.log('\n3. Testing database connection...');
     try {
-      await axios.post(`${VERCEL_URL}/api/auth/register`, {});
+      const dbResponse = await axios.get(`${VERCEL_URL}/api/test-db`);
+      console.log('✅ Database test successful:', dbResponse.data);
     } catch (error) {
-      if (error.response?.status === 400) {
-        console.log('✅ Registration endpoint working (correctly rejected empty request)');
+      console.log('❌ Database test failed:', error.response?.status);
+      if (error.response?.data && typeof error.response.data === 'string' && error.response.data.includes('<!doctype html>')) {
+        console.log('   Issue: API endpoint returning HTML instead of JSON');
       } else {
-        console.log('❌ Registration endpoint error:', error.response?.data);
+        console.log('   Error:', error.response?.data);
       }
     }
-    console.log('');
 
-    console.log('🎉 All tests passed! Your Vercel deployment is working correctly.');
-    console.log('\nNext steps:');
-    console.log('1. Update the CLIENT_URL in your Vercel environment variables');
-    console.log('2. Update client/.env.production with your Vercel URL');
-    console.log('3. Redeploy your application');
-    console.log('4. Test login with your existing credentials');
+    // Test 4: Login endpoint
+    console.log('\n4. Testing login endpoint...');
+    try {
+      const loginData = {
+        email: 'admin@firedept.com',
+        password: 'admin123'
+      };
+      
+      const loginResponse = await axios.post(`${VERCEL_URL}/api/auth/login`, loginData);
+      console.log('✅ Login endpoint working');
+      console.log('   User:', loginResponse.data.user?.email);
+      console.log('   Token received:', !!loginResponse.data.token);
+    } catch (error) {
+      console.log('❌ Login endpoint failed:', error.response?.status);
+      console.log('   Error:', error.response?.data);
+    }
+
+    // Test 5: Frontend accessibility
+    console.log('\n5. Testing frontend...');
+    try {
+      const frontendResponse = await axios.get(`${VERCEL_URL}/`);
+      console.log('✅ Frontend accessible:', frontendResponse.status);
+    } catch (error) {
+      console.log('❌ Frontend failed:', error.response?.status);
+    }
+
+    console.log('\n' + '='.repeat(50));
+    console.log('Test completed!');
 
   } catch (error) {
-    console.error('❌ Test failed:', error.message);
-    console.log('\nPossible issues:');
-    console.log('1. Vercel URL is incorrect - update the VERCEL_URL variable');
-    console.log('2. Environment variables not set in Vercel');
-    console.log('3. Deployment failed - check Vercel logs');
+    console.error('Test failed:', error.message);
   }
 }
 
-// Run the test
-testDeployment();
+testVercelDeployment();
