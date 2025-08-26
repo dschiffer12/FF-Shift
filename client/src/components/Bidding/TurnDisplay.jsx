@@ -68,7 +68,7 @@ const TurnDisplay = ({ session, currentUser }) => {
   const checkTimeExpiration = async () => {
     try {
       console.log('Checking for timer expiration...');
-      const response = await api.post(`/api/bid-sessions/${session.id || session._id}/check-time-expiration`);
+      const response = await api.post(`/bid-sessions/${session.id || session._id}/check-time-expiration`);
       console.log('Timer expiration check response:', response.data);
     } catch (error) {
       console.error('Error checking timer expiration:', error);

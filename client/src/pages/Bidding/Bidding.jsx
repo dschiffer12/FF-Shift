@@ -267,14 +267,14 @@ const Bidding = () => {
       console.log('Fetching stations...');
       
       // Try the regular stations endpoint first
-      const response = await api.get('/api/stations');
+      const response = await api.get('/stations');
       console.log('Stations response:', response.data);
       
       if (response.data.stations && response.data.stations.length > 0) {
         setStations(response.data.stations || []);
       } else {
         // Fallback to available endpoint
-        const availableResponse = await api.get('/api/stations/available');
+        const availableResponse = await api.get('/stations/available');
         console.log('Available stations response:', availableResponse.data);
         setStations(availableResponse.data.stations || []);
       }
@@ -291,7 +291,7 @@ const Bidding = () => {
       console.log('Joining session:', session.id || session._id);
       
       // First, try to join via API
-      const response = await api.post(`/api/bid-sessions/${session.id || session._id}/join`);
+      const response = await api.post(`/bid-sessions/${session.id || session._id}/join`);
       console.log('Join session API response:', response.data);
       
       // Then join via Socket.IO

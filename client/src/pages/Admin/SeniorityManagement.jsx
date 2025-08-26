@@ -119,7 +119,7 @@ const SeniorityManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/admin/users');
+      const response = await api.get('/admin/users');
       setUsers(response.data.users || []);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -131,7 +131,7 @@ const SeniorityManagement = () => {
 
   const fetchStations = async () => {
     try {
-      const response = await api.get('/api/stations');
+      const response = await api.get('/stations');
       setStations(response.data.stations || []);
     } catch (error) {
       console.error('Error fetching stations:', error);
@@ -265,7 +265,7 @@ const SeniorityManagement = () => {
 
   const handleSaveSeniority = async () => {
     try {
-      const response = await api.put(`/api/admin/users/${editingUser._id}`, {
+      const response = await api.put(`/admin/users/${editingUser._id}`, {
         yearsOfService: editForm.yearsOfService,
         rank: editForm.rank,
         position: editForm.position,
@@ -307,7 +307,7 @@ const SeniorityManagement = () => {
   const handleQuickAdjust = async (user, adjustment) => {
     try {
       const newYearsOfService = Math.max(0, (user.yearsOfService || 0) + adjustment);
-      const response = await api.put(`/api/admin/users/${user._id}`, {
+      const response = await api.put(`/admin/users/${user._id}`, {
         yearsOfService: newYearsOfService
       });
 
@@ -333,7 +333,7 @@ const SeniorityManagement = () => {
 
   const handleSaveStationAssignment = async () => {
     try {
-      const response = await api.put(`/api/admin/users/${editingUser._id}/station`, {
+      const response = await api.put(`/admin/users/${editingUser._id}/station`, {
         stationId: stationAssignmentForm.stationId,
         shift: stationAssignmentForm.shift
       });

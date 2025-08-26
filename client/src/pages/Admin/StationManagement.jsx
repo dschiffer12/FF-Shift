@@ -49,7 +49,7 @@ const StationManagement = () => {
   const fetchStations = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/stations');
+      const response = await api.get('/stations');
       setStations(response.data.stations || []);
     } catch (error) {
       console.error('Error fetching stations:', error);
@@ -115,7 +115,7 @@ const StationManagement = () => {
         }
       };
       
-      const response = await api.post('/api/stations', transformedData);
+      const response = await api.post('/stations', transformedData);
       setStations([...stations, response.data.station]);
       setIsCreating(false);
       reset();
@@ -142,7 +142,7 @@ const StationManagement = () => {
         isActive: data.isActive
       };
       
-      const response = await api.put(`/api/stations/${selectedStation._id || selectedStation.id}`, transformedData);
+      const response = await api.put(`/stations/${selectedStation._id || selectedStation.id}`, transformedData);
       setStations(stations.map(station => 
         (station._id || station.id) === (selectedStation._id || selectedStation.id) ? response.data.station : station
       ));
@@ -162,7 +162,7 @@ const StationManagement = () => {
     }
 
     try {
-      await api.delete(`/api/stations/${stationId}`);
+      await api.delete(`/stations/${stationId}`);
       setStations(stations.filter(station => (station._id || station.id) !== stationId));
       toast.success('Station deleted successfully');
     } catch (error) {

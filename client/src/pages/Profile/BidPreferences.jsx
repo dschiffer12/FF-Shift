@@ -30,7 +30,7 @@ const BidPreferences = ({ onClose }) => {
   const fetchPreferences = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/users/preferences');
+      const response = await api.get('/users/preferences');
       const prefs = response.data.preferences || {};
       reset({
         preferredShifts: prefs.preferredShifts || [],
@@ -59,7 +59,7 @@ const BidPreferences = ({ onClose }) => {
   const onSubmit = async (data) => {
     try {
       setSaving(true);
-      await api.put('/api/users/preferences', data);
+      await api.put('/users/preferences', data);
       toast.success('Preferences updated successfully!');
       onClose();
     } catch (error) {

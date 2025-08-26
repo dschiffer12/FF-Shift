@@ -170,7 +170,7 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logout = async () => {
     try {
-      await api.post('/api/auth/logout');
+      await api.post('/auth/logout');
     } catch (error) {
       console.error('Logout API call failed:', error);
     }
@@ -198,7 +198,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error('No refresh token available');
       }
 
-      const response = await api.post('/api/auth/refresh', { refreshToken });
+              const response = await api.post('/auth/refresh', { refreshToken });
       const { token: newToken, refreshToken: newRefreshToken } = response.data;
 
       // Store new tokens
@@ -222,7 +222,7 @@ export const AuthProvider = ({ children }) => {
   // Update user profile
   const updateProfile = async (profileData) => {
     try {
-      const response = await api.put('/api/users/profile', profileData);
+      const response = await api.put('/users/profile', profileData);
       const updatedUser = response.data.user;
 
       dispatch({ type: AUTH_ACTIONS.UPDATE_USER, payload: updatedUser });
@@ -240,7 +240,7 @@ export const AuthProvider = ({ children }) => {
   // Change password
   const changePassword = async (currentPassword, newPassword) => {
     try {
-      await api.put('/api/users/change-password', {
+      await api.put('/users/change-password', {
         currentPassword,
         newPassword
       });
@@ -258,7 +258,7 @@ export const AuthProvider = ({ children }) => {
   // Forgot password
   const forgotPassword = async (email) => {
     try {
-      await api.post('/api/auth/forgot-password', { email });
+      await api.post('/auth/forgot-password', { email });
       
       toast.success('Password reset email sent');
       return { success: true };
@@ -273,7 +273,7 @@ export const AuthProvider = ({ children }) => {
   // Reset password
   const resetPassword = async (token, password) => {
     try {
-      await api.post(`/api/auth/reset-password/${token}`, { password });
+      await api.post(`/auth/reset-password/${token}`, { password });
       
       toast.success('Password reset successfully');
       return { success: true };

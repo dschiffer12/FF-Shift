@@ -172,8 +172,8 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       const [statsResponse, activityResponse] = await Promise.all([
-        api.get('/api/admin/stats'),
-        api.get('/api/admin/recent-activity')
+        api.get('/admin/stats'),
+        api.get('/admin/recent-activity')
       ]);
       
       setStats(statsResponse.data);
@@ -188,7 +188,7 @@ const AdminDashboard = () => {
 
   const fetchUserActivity = async () => {
     try {
-      const response = await api.get('/api/admin/user-activity');
+      const response = await api.get('/admin/user-activity');
       setUserActivity(response.data.activities || []);
     } catch (error) {
       console.error('Error fetching user activity:', error);
@@ -207,7 +207,7 @@ const AdminDashboard = () => {
 
   const fetchOnlineUsers = async () => {
     try {
-      const response = await api.get('/api/admin/online-users');
+      const response = await api.get('/admin/online-users');
       setOnlineUsers(response.data.users || []);
     } catch (error) {
       console.error('Error fetching online users:', error);

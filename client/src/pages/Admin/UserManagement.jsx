@@ -104,7 +104,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/admin/users');
+      const response = await api.get('/admin/users');
       setUsers(response.data.users || []);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -117,7 +117,7 @@ const UserManagement = () => {
   const fetchStations = async () => {
     try {
       setLoadingStations(true);
-      const response = await api.get('/api/stations');
+      const response = await api.get('/stations');
       setStations(response.data.stations || []);
     } catch (error) {
       console.error('Error fetching stations:', error);
@@ -131,7 +131,7 @@ const UserManagement = () => {
     try {
       console.log('Station assignment data:', data);
       console.log('Selected user:', selectedUser);
-      const response = await api.put(`/api/admin/users/${selectedUser._id}/station`, {
+      const response = await api.put(`/admin/users/${selectedUser._id}/station`, {
         stationId: data.stationId,
         shift: data.shift
       });
@@ -253,7 +253,7 @@ const UserManagement = () => {
 
   const handleCreateUser = async (data) => {
     try {
-      const response = await api.post('/api/admin/users', data);
+      const response = await api.post('/admin/users', data);
       setUsers([...users, response.data.user]);
       setIsCreating(false);
       reset();
@@ -266,7 +266,7 @@ const UserManagement = () => {
 
   const handleUpdateUser = async (data) => {
     try {
-      const response = await api.put(`/api/admin/users/${selectedUser._id}`, data);
+      const response = await api.put(`/admin/users/${selectedUser._id}`, data);
       setUsers(users.map(user => 
         user._id === selectedUser._id ? response.data.user : user
       ));
@@ -286,7 +286,7 @@ const UserManagement = () => {
     }
 
     try {
-      await api.delete(`/api/admin/users/${userId}`);
+      await api.delete(`/admin/users/${userId}`);
       setUsers(users.filter(user => user._id !== userId));
       toast.success('User deleted successfully');
     } catch (error) {

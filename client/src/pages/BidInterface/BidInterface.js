@@ -88,7 +88,7 @@ const BidInterface = () => {
 
   const fetchAvailableStations = async () => {
     try {
-      const response = await api.get('/api/stations/available');
+      const response = await api.get('/stations/available');
       setAvailableStations(response.data.stations || []);
     } catch (error) {
       console.error('Error fetching available stations:', error);
@@ -97,7 +97,7 @@ const BidInterface = () => {
 
   const fetchUserPosition = async () => {
     try {
-      const response = await api.get('/api/users/bid-status');
+      const response = await api.get('/users/bid-status');
       setUserPosition(response.data.position);
       setIsUserTurn(response.data.isUserTurn || false);
       setTimeRemaining(response.data.timeRemaining || 0);

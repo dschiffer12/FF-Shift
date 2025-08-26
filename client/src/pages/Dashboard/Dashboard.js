@@ -81,7 +81,7 @@ const Dashboard = () => {
 
   const fetchUserBidStatus = async () => {
     try {
-      const response = await api.get('/api/users/bid-status');
+      const response = await api.get('/users/bid-status');
       setUserBidStatus(response.data);
     } catch (error) {
       console.error('Error fetching user bid status:', error);
@@ -90,7 +90,7 @@ const Dashboard = () => {
 
   const fetchRecentActivity = async () => {
     try {
-      const response = await api.get('/api/users/recent-activity');
+      const response = await api.get('/users/recent-activity');
       setRecentActivity(response.data.activities || []);
     } catch (error) {
       console.error('Error fetching recent activity:', error);
@@ -99,7 +99,7 @@ const Dashboard = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await api.get('/api/users/notifications');
+      const response = await api.get('/users/notifications');
       setNotifications(response.data.notifications || []);
     } catch (error) {
       console.error('Error fetching notifications:', error);

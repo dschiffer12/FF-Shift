@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000'),
+  baseURL: process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api'),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -41,7 +41,7 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
           const response = await axios.post(
-            `${process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000')}/auth/refresh`,
+            `${process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api')}/auth/refresh`,
             { refreshToken }
           );
 
@@ -87,61 +87,61 @@ api.interceptors.response.use(
 export const endpoints = {
   // Auth
   auth: {
-    login: '/api/auth/login',
-    register: '/api/auth/register',
-    logout: '/api/auth/logout',
-    refresh: '/api/auth/refresh',
-    me: '/api/auth/me',
-    forgotPassword: '/api/auth/forgot-password',
-    resetPassword: (token) => `/api/auth/reset-password/${token}`,
+    login: '/auth/login',
+    register: '/auth/register',
+    logout: '/auth/logout',
+    refresh: '/auth/refresh',
+    me: '/auth/me',
+    forgotPassword: '/auth/forgot-password',
+    resetPassword: (token) => `/auth/reset-password/${token}`,
   },
 
   // Users
   users: {
-    profile: '/api/users/profile',
-    preferences: '/api/users/preferences',
-    changePassword: '/api/users/change-password',
-    bidHistory: '/api/users/bid-history',
-    bidStatus: '/api/users/bid-status',
-    seniority: '/api/users/seniority',
+    profile: '/users/profile',
+    preferences: '/users/preferences',
+    changePassword: '/users/change-password',
+    bidHistory: '/users/bid-history',
+    bidStatus: '/users/bid-status',
+    seniority: '/users/seniority',
   },
 
   // Stations
   stations: {
-    list: '/api/stations',
-    detail: (id) => `/api/stations/${id}`,
-    availability: (id) => `/api/stations/${id}/availability`,
-    positions: (id) => `/api/stations/${id}/positions`,
-    availablePositions: '/api/stations/available/positions',
+    list: '/stations',
+    detail: (id) => `/stations/${id}`,
+    availability: (id) => `/stations/${id}/availability`,
+    positions: (id) => `/stations/${id}/positions`,
+    availablePositions: '/stations/available/positions',
   },
 
   // Bid Sessions
   bidSessions: {
-    list: '/api/bid-sessions',
-    create: '/api/bid-sessions',
-    current: '/api/bid-sessions/current',
-    detail: (id) => `/api/bid-sessions/${id}`,
-    update: (id) => `/api/bid-sessions/${id}`,
-    delete: (id) => `/api/bid-sessions/${id}`,
-    participants: (id) => `/api/bid-sessions/${id}/participants`,
-    start: (id) => `/api/bid-sessions/${id}/start`,
-    pause: (id) => `/api/bid-sessions/${id}/pause`,
-    resume: (id) => `/api/bid-sessions/${id}/resume`,
-    moveToBack: (id) => `/api/bid-sessions/${id}/move-to-back`,
-    checkTimeExpiration: (id) => `/api/bid-sessions/${id}/check-time-expiration`,
-    myParticipation: (id) => `/api/bid-sessions/${id}/my-participation`,
-    history: (id) => `/api/bid-sessions-history?sessionId=${id}`,
+    list: '/bid-sessions',
+    create: '/bid-sessions',
+    current: '/bid-sessions/current',
+    detail: (id) => `/bid-sessions/${id}`,
+    update: (id) => `/bid-sessions/${id}`,
+    delete: (id) => `/bid-sessions/${id}`,
+    participants: (id) => `/bid-sessions/${id}/participants`,
+    start: (id) => `/bid-sessions/${id}/start`,
+    pause: (id) => `/bid-sessions/${id}/pause`,
+    resume: (id) => `/bid-sessions/${id}/resume`,
+    moveToBack: (id) => `/bid-sessions/${id}/move-to-back`,
+    checkTimeExpiration: (id) => `/bid-sessions/${id}/check-time-expiration`,
+    myParticipation: (id) => `/bid-sessions/${id}/my-participation`,
+    history: (id) => `/bid-sessions-history?sessionId=${id}`,
   },
 
   // Admin
   admin: {
-    users: '/api/admin/users',
-    userDetail: (id) => `/api/admin/users/${id}`,
-    resetPassword: (id) => `/api/admin/users/${id}/reset-password`,
-    statistics: '/api/admin/statistics',
-    connections: '/api/admin/connections',
-    bulkOperations: '/api/admin/bulk-operations',
-    exportUsers: '/api/admin/export/users',
+    users: '/admin/users',
+    userDetail: (id) => `/admin/users/${id}`,
+    resetPassword: (id) => `/admin/users/${id}/reset-password`,
+    statistics: '/admin/statistics',
+    connections: '/admin/connections',
+    bulkOperations: '/admin/bulk-operations',
+    exportUsers: '/admin/export/users',
   },
 };
 

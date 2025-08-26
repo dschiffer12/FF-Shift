@@ -72,7 +72,7 @@ const BidSessionManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get('/api/admin/users');
+      const response = await api.get('/admin/users');
       setUsers(response.data.users || []);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -237,7 +237,7 @@ const BidSessionManagement = () => {
 
   const handleMoveToBack = async (sessionId, userId) => {
     try {
-      await api.post(`/api/bid-sessions/${sessionId}/move-to-back`, { userId });
+      await api.post(`/bid-sessions/${sessionId}/move-to-back`, { userId });
       await fetchBidSessions(); // Refresh the list
       toast.success('User moved to back of queue successfully');
     } catch (error) {

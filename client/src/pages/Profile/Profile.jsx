@@ -171,7 +171,7 @@ const Profile = () => {
   const fetchBidHistory = async () => {
     try {
       setHistoryLoading(true);
-      const response = await api.get('/api/users/bid-history');
+      const response = await api.get('/users/bid-history');
       setBidHistory(response.data.bidHistory || []);
     } catch (error) {
       console.error('Error fetching bid history:', error);
@@ -182,7 +182,7 @@ const Profile = () => {
 
   const fetchBidPreferences = async () => {
     try {
-      const response = await api.get('/api/users/preferences');
+      const response = await api.get('/users/preferences');
       setBidPreferences(response.data.preferences || {});
     } catch (error) {
       console.error('Error fetching bid preferences:', error);
@@ -196,7 +196,7 @@ const Profile = () => {
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-      const response = await api.put('/api/users/profile', data);
+      const response = await api.put('/users/profile', data);
       updateUser(response.data.user);
       setIsEditing(false);
       toast.success('Profile updated successfully!');
@@ -211,7 +211,7 @@ const Profile = () => {
   const onPasswordSubmit = async (data) => {
     setPasswordLoading(true);
     try {
-      await api.put('/api/users/change-password', {
+      await api.put('/users/change-password', {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword
       });
