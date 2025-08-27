@@ -23,22 +23,8 @@
       "dest": "/client/build/static/$1"
     },
     {
-      "src": "/favicon.ico",
-      "dest": "/client/build/favicon.ico"
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/client/build/manifest.json"
-    },
-    {
-      "src": "/asset-manifest.json",
-      "dest": "/client/build/asset-manifest.json"
-    },
-    {
       "src": "/(.*)",
       "dest": "/client/build/index.html"
     }
-  ],
-  "buildCommand": "npm run vercel-build",
-  "outputDirectory": "client/build"
+  ]
 }
