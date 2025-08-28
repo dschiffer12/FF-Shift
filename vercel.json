@@ -19,8 +19,7 @@
       "dest": "/api/$1"
     },
     {
-      "src": "/static/(.*)",
-      "dest": "/client/build/static/$1"
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
