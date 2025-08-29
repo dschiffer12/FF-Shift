@@ -13,7 +13,6 @@ import {
   CheckCircle,
   TrendingUp,
   TrendingDown,
-  Activity,
   Calendar,
   Shield,
   UserPlus,
@@ -25,8 +24,7 @@ import {
   Download,
   Pause,
   User,
-  WifiOff,
-  Target
+  WifiOff
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -49,7 +47,6 @@ const AdminDashboard = () => {
     pendingApprovals: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
-  const [userActivity, setUserActivity] = useState([]);
   const [bidSessions, setBidSessions] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [activeBidWindows, setActiveBidWindows] = useState([]);
@@ -724,58 +721,9 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* User Activity and Recent Activity */}
+        {/* Recent System Activity */}
         <div className="lg:col-span-2">
           <div className="grid grid-cols-1 gap-6">
-            {/* User Activity */}
-            <div className="card">
-              <div className="card-header">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium text-gray-900">User Activity</h3>
-                  <Button variant="secondary" size="sm">
-                    View All
-                  </Button>
-                </div>
-              </div>
-              <div className="card-body">
-                {userActivity.length > 0 ? (
-                  <div className="space-y-4">
-                    {userActivity.slice(0, 8).map((activity, index) => (
-                      <div key={index} className="flex items-start space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          {activity.type === 'login' && <User className="w-4 h-4 text-blue-600" />}
-                          {activity.type === 'bid' && <Target className="w-4 h-4 text-blue-600" />}
-                          {activity.type === 'session' && <Clock className="w-4 h-4 text-blue-600" />}
-                          {activity.type === 'system' && <Settings className="w-4 h-4 text-blue-600" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900">
-                            {activity.userName}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {activity.action}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {new Date(activity.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {activity.isOnline && (
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No recent user activity</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Recent System Activity */}
             <div className="card">
               <div className="card-header">
@@ -840,40 +788,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* User Activity Chart */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900">User Activity</h3>
-          </div>
-          <div className="card-body">
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-              <div className="text-center">
-                <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Chart component will be implemented</p>
-                <p className="text-sm text-gray-400">User login activity over time</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Bid Session Performance */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900">Bid Session Performance</h3>
-          </div>
-          <div className="card-body">
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-              <div className="text-center">
-                <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Chart component will be implemented</p>
-                <p className="text-sm text-gray-400">Bid session completion rates</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
