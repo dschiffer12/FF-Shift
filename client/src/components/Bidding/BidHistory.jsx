@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Clock, 
   Building2, 
@@ -16,18 +16,9 @@ import toast from 'react-hot-toast';
 const BidHistory = ({ sessionId }) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sessionName] = useState('');
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('BidHistory component received sessionId:', sessionId);
-    if (sessionId) {
-      fetchHistory();
-    }
-  }, [sessionId, fetchHistory]);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       // eslint-disable-next-line no-console
       console.log('Fetching history for sessionId:', sessionId);
@@ -40,7 +31,6 @@ const BidHistory = ({ sessionId }) => {
       // eslint-disable-next-line no-console
       console.log('History API response:', response.data);
       setHistory(response.data.history || []);
-      // setSessionName(response.data.sessionName || '');
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Error fetching bid history:', error);
@@ -55,7 +45,15 @@ const BidHistory = ({ sessionId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('BidHistory component received sessionId:', sessionId);
+    if (sessionId) {
+      fetchHistory();
+    }
+  }, [sessionId, fetchHistory]);
 
   const getActionIcon = (action) => {
     switch (action) {

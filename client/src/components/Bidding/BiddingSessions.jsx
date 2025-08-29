@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Clock, 
   User, 
@@ -29,6 +29,67 @@ const BiddingSessions = ({ session, currentUser, isAdmin = false }) => {
   const [showAllBids, setShowAllBids] = useState(false);
   const [, setCurrentTime] = useState(new Date());
 
+  const fetchRecentBids = useCallback(async () => {
+    try {
+      const response = await api.get(endpoints.bidSessions.history(session.id || session._id));
+      const history = response.data.history || [];
+      
+      // Filter for actual bids (not session events) and get last 5
+      const bids = history
+        .filter(item => item.action === 'bid_submitted')
+        .slice(0, 5);
+      
+      setRecentBids(bids);
+    } catch (error) {
+      console.error('Error fetching recent bids:', error);
+    }
+  }, [session.id, session._id]);
+
+  const fetchUpcomingUsers = useCallback(async () => {
+    if (!session.participants) return;
+
+    const currentIndex = session.currentParticipant - 1;
+    const upcoming = session.participants
+      .slice(currentIndex + 1, currentIndex + 4) // Next 3 users
+      .filter(p => p.user); // Ensure user exists
+
+    setUpcomingUsers(upcoming);
+  }, [session.participants, session.currentParticipant]);
+
+  const fetchAllBids = useCallback(async () => {
+    try {
+      const response = await api.get(endpoints.bidSessions.history(session.id || session._id));
+      const history = response.data.history || [];
+      
+      // Filter for actual bids only
+      const bids = history.filter(item => item.action === 'bid_submitted');
+      setAllBids(bids);
+    } catch (error) {
+      console.error('Error fetching all bids:', error);
+    }
+  }, [session.id, session._id]);
+
+  const fetchSessionData = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      await Promise.all([
+        fetchRecentBids(),
+        fetchUpcomingUsers(),
+        fetchAllBids()
+      ]);
+    } catch (error) {
+      console.error('Error fetching session data:', error);
+      toast.error('Failed to load session data');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [fetchRecentBids, fetchUpcomingUsers, fetchAllBids]);
+
   useEffect(() => {
     if (session) {
       fetchSessionData();
@@ -54,67 +115,6 @@ const BiddingSessions = ({ session, currentUser, isAdmin = false }) => {
 
     return () => clearInterval(refreshTimer);
   }, [session, fetchSessionData]);
-
-  const fetchSessionData = async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      await Promise.all([
-        fetchRecentBids(),
-        fetchUpcomingUsers(),
-        fetchAllBids()
-      ]);
-    } catch (error) {
-      console.error('Error fetching session data:', error);
-      toast.error('Failed to load session data');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const fetchRecentBids = async () => {
-    try {
-      const response = await api.get(endpoints.bidSessions.history(session.id || session._id));
-      const history = response.data.history || [];
-      
-      // Filter for actual bids (not session events) and get last 5
-      const bids = history
-        .filter(item => item.action === 'bid_submitted')
-        .slice(0, 5);
-      
-      setRecentBids(bids);
-    } catch (error) {
-      console.error('Error fetching recent bids:', error);
-    }
-  };
-
-  const fetchUpcomingUsers = async () => {
-    if (!session.participants) return;
-
-    const currentIndex = session.currentParticipant - 1;
-    const upcoming = session.participants
-      .slice(currentIndex + 1, currentIndex + 4) // Next 3 users
-      .filter(p => p.user); // Ensure user exists
-
-    setUpcomingUsers(upcoming);
-  };
-
-  const fetchAllBids = async () => {
-    try {
-      const response = await api.get(endpoints.bidSessions.history(session.id || session._id));
-      const history = response.data.history || [];
-      
-      // Filter for actual bids only
-      const bids = history.filter(item => item.action === 'bid_submitted');
-      setAllBids(bids);
-    } catch (error) {
-      console.error('Error fetching all bids:', error);
-    }
-  };
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);

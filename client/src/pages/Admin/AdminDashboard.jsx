@@ -25,7 +25,6 @@ import {
   Download,
   Pause,
   User,
-  Wifi,
   WifiOff,
   Target
 } from 'lucide-react';
@@ -65,6 +64,68 @@ const AdminDashboard = () => {
   // Add countdown timer state
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  const updateActiveBidWindows = useCallback(() => {
+    const active = bidSessions.filter(session => 
+      session.status === 'active' && session.currentParticipant
+    );
+    setActiveBidWindows(active);
+  }, [bidSessions]);
+
+  const updateStats = useCallback(() => {
+    // Update stats based on current data
+    setStats(prev => ({
+      ...prev,
+      activeUsers: onlineUsers.filter(u => u.isOnline).length,
+      activeBidSessions: bidSessions.filter(s => s.status === 'active').length,
+      completedBidSessions: bidSessions.filter(s => s.status === 'completed').length
+    }));
+  }, [onlineUsers, bidSessions]);
+
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [statsResponse, activityResponse] = await Promise.all([
+        api.get('/admin/stats'),
+        api.get('/admin/recent-activity')
+      ]);
+      
+      setStats(statsResponse.data);
+      setRecentActivity(activityResponse.data.activities || []);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchUserActivity = useCallback(async () => {
+    try {
+      const response = await api.get('/admin/user-activity');
+      setUserActivity(response.data.activities || []);
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+    }
+  }, []);
+
+  const fetchBidSessions = useCallback(async () => {
+    try {
+      const response = await api.get(endpoints.bidSessions.list);
+      setBidSessions(response.data.sessions || []);
+    } catch (error) {
+      console.error('Error fetching bid sessions:', error);
+    }
+  }, []);
+
+  const fetchOnlineUsers = useCallback(async () => {
+    try {
+      const response = await api.get('/admin/online-users');
+      setOnlineUsers(response.data.users || []);
+    } catch (error) {
+      console.error('Error fetching online users:', error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchDashboardData();
     fetchUserActivity();
@@ -80,6 +141,11 @@ const AdminDashboard = () => {
 
     return () => clearInterval(timer);
   }, []);
+
+  // Update active bid windows when bid sessions change
+  useEffect(() => {
+    updateActiveBidWindows();
+  }, [bidSessions, updateActiveBidWindows]);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -164,70 +230,7 @@ const AdminDashboard = () => {
       socket.off('bid-session-started', handleBidSessionStarted);
       socket.off('bid-session-completed', handleBidSessionCompleted);
     };
-  }, [socket, isConnected]);
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const [statsResponse, activityResponse] = await Promise.all([
-        api.get('/admin/stats'),
-        api.get('/admin/recent-activity')
-      ]);
-      
-      setStats(statsResponse.data);
-      setRecentActivity(activityResponse.data.activities || []);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      toast.error('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchUserActivity = async () => {
-    try {
-      const response = await api.get('/admin/user-activity');
-      setUserActivity(response.data.activities || []);
-    } catch (error) {
-      console.error('Error fetching user activity:', error);
-    }
-  };
-
-  const fetchBidSessions = async () => {
-    try {
-      const response = await api.get(endpoints.bidSessions.list);
-      setBidSessions(response.data.sessions || []);
-      updateActiveBidWindows();
-    } catch (error) {
-      console.error('Error fetching bid sessions:', error);
-    }
-  };
-
-  const fetchOnlineUsers = async () => {
-    try {
-      const response = await api.get('/admin/online-users');
-      setOnlineUsers(response.data.users || []);
-    } catch (error) {
-      console.error('Error fetching online users:', error);
-    }
-  };
-
-  const updateStats = useCallback(() => {
-    // Update stats based on current data
-    setStats(prev => ({
-      ...prev,
-      activeUsers: onlineUsers.filter(u => u.isOnline).length,
-      activeBidSessions: bidSessions.filter(s => s.status === 'active').length,
-      completedBidSessions: bidSessions.filter(s => s.status === 'completed').length
-    }));
-  }, [onlineUsers, bidSessions]);
-
-  const updateActiveBidWindows = useCallback(() => {
-    const active = bidSessions.filter(session => 
-      session.status === 'active' && session.currentParticipant
-    );
-    setActiveBidWindows(active);
-  }, [bidSessions]);
+  }, [socket, isConnected, updateStats, updateActiveBidWindows]);
 
   const handleQuickAction = (action) => {
     switch (action) {

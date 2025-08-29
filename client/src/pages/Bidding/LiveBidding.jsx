@@ -43,7 +43,6 @@ const LiveBidding = () => {
     position: ''
   });
   const [showBidForm, setShowBidForm] = useState(false);
-  const [, setSubmittingBid] = useState(false);
   const [availableStations, setAvailableStations] = useState([]);
   
   const timerRef = useRef(null);

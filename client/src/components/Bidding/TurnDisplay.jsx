@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   User, 
   Users, 
@@ -13,6 +13,17 @@ import api from '../../services/api';
 const TurnDisplay = ({ session, currentUser }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [timeRemaining, setTimeRemaining] = useState(0);
+
+  // Function to check for timer expiration
+  const checkTimeExpiration = useCallback(async () => {
+    try {
+      console.log('Checking for timer expiration...');
+      const response = await api.post(`/bid-sessions/${session.id || session._id}/check-time-expiration`);
+      console.log('Timer expiration check response:', response.data);
+    } catch (error) {
+      console.error('Error checking timer expiration:', error);
+    }
+  }, [session?.id, session?._id]);
 
   // Debug logging
   useEffect(() => {
@@ -63,17 +74,6 @@ const TurnDisplay = ({ session, currentUser }) => {
       setTimeRemaining(0);
     }
   }, [session?.currentBidEnd, session?.status, session?.bidWindowDuration, currentTime, checkTimeExpiration]);
-
-  // Function to check for timer expiration
-  const checkTimeExpiration = async () => {
-    try {
-      console.log('Checking for timer expiration...');
-      const response = await api.post(`/bid-sessions/${session.id || session._id}/check-time-expiration`);
-      console.log('Timer expiration check response:', response.data);
-    } catch (error) {
-      console.error('Error checking timer expiration:', error);
-    }
-  };
 
   if (!session || (session.status !== 'active' && session.status !== 'paused' && session.status !== 'scheduled')) {
     return null;
