@@ -4,18 +4,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#C0392B" />
-    <meta name="description" content="FF Shift - Test Page" />
-    <title>FF Shift - Test Page</title>
+    <meta name="description" content="FF Shift - Professional shift bidding platform for fire departments and emergency services" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self';">
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <title>FF Shift - Shift Bidding System</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root">
-      <h1>FF Shift - Direct HTML Test</h1>
-      <p>If you can see this, the HTML is being served correctly.</p>
-      <p>Current time: <span id="time"></span></p>
-    </div>
-    <script>
-      document.getElementById('time').textContent = new Date().toLocaleString();
-    </script>
+    <div id="root"></div>
   </body>
 </html>
