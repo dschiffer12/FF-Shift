@@ -88,7 +88,6 @@ export const AuthProvider = ({ children }) => {
   // Clear any corrupted tokens on app load
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const refreshToken = localStorage.getItem('refreshToken');
     
     // Check if tokens exist but are malformed
     if (token && (token.length < 10 || !token.includes('.'))) {
@@ -224,13 +223,13 @@ export const AuthProvider = ({ children }) => {
   // Refresh token function
   const refreshToken = async () => {
     try {
-      // const refreshToken = localStorage.getItem('refreshToken');
+      const storedRefreshToken = localStorage.getItem('refreshToken');
       
-      if (!refreshToken) {
+      if (!storedRefreshToken) {
         throw new Error('No refresh token available');
       }
 
-              const response = await api.post('/auth/refresh', { refreshToken });
+      const response = await api.post('/auth/refresh', { refreshToken: storedRefreshToken });
       const { token: newToken, refreshToken: newRefreshToken } = response.data;
 
       // Store new tokens
