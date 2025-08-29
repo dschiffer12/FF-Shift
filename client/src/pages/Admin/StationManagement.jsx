@@ -13,10 +13,12 @@ import {
   Plus,
   Save,
   X,
-  RefreshCw
+  RefreshCw,
+  Upload
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import StationImport from '../../components/Admin/StationImport';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -30,6 +32,7 @@ const StationManagement = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showStationDetails, setShowStationDetails] = useState(false);
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'import'
 
   const {
     register,
@@ -247,43 +250,72 @@ const StationManagement = () => {
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="card">
-        <div className="p-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search stations by name, number, or address..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="input pl-10 w-full"
-                />
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Filter className="w-4 h-4 text-gray-400" />
-              <select
-                value={selectedFilter}
-                onChange={(e) => setSelectedFilter(e.target.value)}
-                className="input"
-              >
-                <option value="all">All Stations</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="full">Full</option>
-                <option value="available">Available</option>
-              </select>
-            </div>
-          </div>
-        </div>
+      {/* View Mode Toggle */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        <Button
+          variant={viewMode === 'list' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setViewMode('list')}
+        >
+          <Building2 className="w-4 h-4 mr-2" />
+          Station List
+        </Button>
+        <Button
+          variant={viewMode === 'import' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setViewMode('import')}
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          Import Stations
+        </Button>
+      </div>
       </div>
 
-      {/* Stations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredStations.map((station) => (
+      {viewMode === 'list' ? (
+        <>
+          {/* Search and Filters */}
+          <div className="card">
+            <div className="p-6">
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search stations by name, number, or address..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="input pl-10 w-full"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Filter className="w-4 h-4 text-gray-400" />
+                  <select
+                    value={selectedFilter}
+                    onChange={(e) => setSelectedFilter(e.target.value)}
+                    className="input"
+                  >
+                    <option value="all">All Stations</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="full">Full</option>
+                    <option value="available">Available</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <StationImport />
+      )}
+
+      {viewMode === 'list' && (
+        <>
+          {/* Stations Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredStations.map((station) => (
           <div key={station._id || station.id} className="card hover:shadow-lg transition-shadow">
             <div className="px-6 py-5 border-b border-rigroster-border">
               <div className="flex items-center justify-between">
@@ -368,10 +400,10 @@ const StationManagement = () => {
               </div>
             </div>
           </div>
-        ))}
-      </div>
+            ))}
+          </div>
 
-      {filteredStations.length === 0 && (
+          {filteredStations.length === 0 && (
         <div className="text-center py-12">
           <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Stations Found</h3>
@@ -380,8 +412,10 @@ const StationManagement = () => {
               ? 'Try adjusting your search or filters.'
               : 'No stations have been added yet.'
             }
-          </p>
-        </div>
+            </p>
+          </div>
+        )}
+        </>
       )}
 
       {/* Create Station Modal */}
