@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "functions": {
+    "../api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "builds": [
+    {
+      "src": "../api/**/*.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["../api/**/*"]
+      }
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/../api/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/build/index.html"
+    }
+  ]
+} 
