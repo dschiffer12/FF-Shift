@@ -20,7 +20,7 @@ const Login = () => {
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-    setError(null);
+    // setError(null);
     
     try {
       // Clear any existing tokens first
@@ -50,15 +50,15 @@ const Login = () => {
         }
       });
       
-      // Handle JWT malformed error specifically
-      if (error.response?.data?.error?.includes('malformed') || error.message?.includes('malformed')) {
-        setError('Authentication token is invalid. Please try logging in again.');
-        // Clear any corrupted tokens
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-      } else {
-        setError(error.response?.data?.error || error.message || 'Login failed');
-      }
+             // Handle JWT malformed error specifically
+       if (error.response?.data?.error?.includes('malformed') || error.message?.includes('malformed')) {
+         // setError('Authentication token is invalid. Please try logging in again.');
+         // Clear any corrupted tokens
+         localStorage.removeItem('token');
+         localStorage.removeItem('refreshToken');
+       } else {
+         // setError(error.response?.data?.error || error.message || 'Login failed');
+       }
       
       setIsLoading(false);
     }

@@ -1,14 +1,17 @@
 const mongoose = require('mongoose');
 
-// Connect to MongoDB
+// Database connection
 const connectDB = async () => {
-  if (mongoose.connection.readyState === 1) return;
-  
   try {
+    if (mongoose.connection.readyState === 1) {
+      return; // Already connected
+    }
+    
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
+    console.log('MongoDB connected');
   } catch (error) {
     console.error('MongoDB connection error:', error);
     throw error;
@@ -35,40 +38,8 @@ const handlePreflight = (req, res) => {
   return false;
 };
 
-// Auth middleware
-const authenticateToken = (req) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    throw new Error('Access token required');
-  }
-
-  try {
-    const decoded = require('jsonwebtoken').verify(token, process.env.JWT_SECRET);
-    return decoded;
-  } catch (error) {
-    throw new Error('Invalid token');
-  }
-};
-
-// Admin auth middleware
-const authenticateAdmin = async (req) => {
-  const decoded = authenticateToken(req);
-  const User = require('../../server/models/User');
-  const user = await User.findById(decoded.userId);
-  
-  if (!user || !user.isAdmin) {
-    throw new Error('Admin access required');
-  }
-  
-  return decoded;
-};
-
 module.exports = {
   connectDB,
   setCORSHeaders,
-  handlePreflight,
-  authenticateToken,
-  authenticateAdmin
+  handlePreflight
 };
