@@ -24,10 +24,12 @@ import {
   TrendingUp,
   Calendar,
   MapPin,
-  Settings
+  Settings,
+  Upload
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import UserImport from '../../components/Admin/UserImport';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -48,6 +50,7 @@ const UserManagement = () => {
   const [stations, setStations] = useState([]);
   // eslint-disable-next-line no-unused-vars
   const [loadingStations, setLoadingStations] = useState(false);
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'import'
 
   const {
     register,
@@ -388,57 +391,85 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="card">
-        <div className="p-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search users by name, email, or employee ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="input pl-10 w-full"
-                />
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Filter className="w-4 h-4 text-gray-400" />
-              <select
-                value={selectedFilter}
-                onChange={(e) => setSelectedFilter(e.target.value)}
-                className="input"
-              >
-                <option value="all">All Users</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="admin">Admins</option>
-                <option value="pending">Pending</option>
-                <option value="senior">Senior (10+ years)</option>
-                <option value="junior">Junior (&lt;5 years)</option>
-                <option value="assigned">Assigned to Station</option>
-                <option value="unassigned">Unassigned</option>
-              </select>
-            </div>
-          </div>
-        </div>
+      {/* View Mode Toggle */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        <Button
+          variant={viewMode === 'list' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setViewMode('list')}
+        >
+          <Users className="w-4 h-4 mr-2" />
+          User List
+        </Button>
+        <Button
+          variant={viewMode === 'import' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setViewMode('import')}
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          Import Users
+        </Button>
       </div>
 
-      {/* Users Table */}
-      <div className="card">
-        <div className="px-6 py-5 border-b border-rigroster-border">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-medium text-gray-900">
-              Users ({filteredUsers.length})
-            </h3>
-            <Button variant="secondary" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Export
-            </Button>
+      {viewMode === 'list' ? (
+        <>
+          {/* Search and Filters */}
+          <div className="card">
+            <div className="p-6">
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search users by name, email, or employee ID..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="input pl-10 w-full"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Filter className="w-4 h-4 text-gray-400" />
+                  <select
+                    value={selectedFilter}
+                    onChange={(e) => setSelectedFilter(e.target.value)}
+                    className="input"
+                  >
+                    <option value="all">All Users</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="admin">Admins</option>
+                    <option value="pending">Pending</option>
+                    <option value="senior">Senior (10+ years)</option>
+                    <option value="junior">Junior (&lt;5 years)</option>
+                    <option value="assigned">Assigned to Station</option>
+                    <option value="unassigned">Unassigned</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </>
+      ) : (
+        <UserImport />
+      )}
+
+      {viewMode === 'list' && (
+        <>
+          {/* Users Table */}
+          <div className="card">
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-medium text-gray-900">
+                  Users ({filteredUsers.length})
+                </h3>
+                <Button variant="secondary" size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+              </div>
+            </div>
         <div className="p-6">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -609,6 +640,8 @@ const UserManagement = () => {
           )}
         </div>
       </div>
+        </>
+      )}
 
       {/* Create User Modal */}
       {isCreating && (
