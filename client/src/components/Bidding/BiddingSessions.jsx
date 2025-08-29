@@ -13,10 +13,7 @@ import {
   BarChart3,
   TrendingUp,
   Calendar,
-  Star,
-  ArrowRight,
-  RefreshCw,
-  Bell
+  RefreshCw
 } from 'lucide-react';
 import api, { endpoints } from '../../services/api';
 import LoadingSpinner from '../UI/LoadingSpinner';
@@ -30,13 +27,13 @@ const BiddingSessions = ({ session, currentUser, isAdmin = false }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showAllBids, setShowAllBids] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     if (session) {
       fetchSessionData();
     }
-  }, [session]);
+  }, [session, fetchSessionData]);
 
   // Update time every second for real-time display
   useEffect(() => {
@@ -56,7 +53,7 @@ const BiddingSessions = ({ session, currentUser, isAdmin = false }) => {
     }, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(refreshTimer);
-  }, [session]);
+  }, [session, fetchSessionData]);
 
   const fetchSessionData = async (isRefresh = false) => {
     try {

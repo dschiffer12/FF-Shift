@@ -11,7 +11,6 @@ import {
   Menu, 
   X,
   BarChart3,
-  Shield,
   Target,
   TrendingUp
 } from 'lucide-react';
@@ -41,9 +40,9 @@ const Layout = () => {
     navigate('/login');
   };
 
-  const isActive = (href) => {
-    return location.pathname === href;
-  };
+  // const isActive = (href) => {
+  //   return location.pathname === href;
+  // };
 
   return (
     <div className="min-h-screen bg-rigroster-offWhite">

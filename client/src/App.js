@@ -67,94 +67,82 @@ const PublicRoute = ({ children }) => {
 };
 
 function App() {
-  try {
-    return (
-      <SocketProvider>
-        <div className="App">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            } />
-            <Route path="/register" element={
-              <PublicRoute>
-                <Register />
-              </PublicRoute>
-            } />
-            <Route path="/forgot-password" element={
-              <PublicRoute>
-                <ForgotPassword />
-              </PublicRoute>
-            } />
-            <Route path="/reset-password/:token" element={
-              <PublicRoute>
-                <ResetPassword />
-              </PublicRoute>
-            } />
+  return (
+    <SocketProvider>
+      <div className="App">
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          } />
+          <Route path="/register" element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          } />
+          <Route path="/forgot-password" element={
+            <PublicRoute>
+              <ForgotPassword />
+            </PublicRoute>
+          } />
+          <Route path="/reset-password/:token" element={
+            <PublicRoute>
+              <ResetPassword />
+            </PublicRoute>
+          } />
 
-            {/* Protected Routes */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Layout />
+          {/* Protected Routes */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="bidding" element={<Bidding />} />
+            <Route path="live-bid/:sessionId" element={<LiveBidding />} />
+            <Route path="bid/:sessionId" element={<BidInterface />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="stations" element={<Stations />} />
+            <Route path="bid-history" element={<BidHistory />} />
+            <Route path="seniority" element={<Seniority />} />
+            
+            {/* Admin Routes */}
+            <Route path="admin" element={
+              <ProtectedRoute requireAdmin>
+                <AdminDashboard />
               </ProtectedRoute>
-            }>
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="bidding" element={<Bidding />} />
-              <Route path="live-bid/:sessionId" element={<LiveBidding />} />
-              <Route path="bid/:sessionId" element={<BidInterface />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="stations" element={<Stations />} />
-              <Route path="bid-history" element={<BidHistory />} />
-              <Route path="seniority" element={<Seniority />} />
-              
-              {/* Admin Routes */}
-              <Route path="admin" element={
-                <ProtectedRoute requireAdmin>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="admin/users" element={
-                <ProtectedRoute requireAdmin>
-                  <UserManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="admin/stations" element={
-                <ProtectedRoute requireAdmin>
-                  <StationManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="admin/bid-sessions" element={
-                <ProtectedRoute requireAdmin>
-                  <BidSessionManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="admin/seniority" element={
-                <ProtectedRoute requireAdmin>
-                  <SeniorityManagement />
-                </ProtectedRoute>
-              } />
-            </Route>
+            } />
+            <Route path="admin/users" element={
+              <ProtectedRoute requireAdmin>
+                <UserManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="admin/stations" element={
+              <ProtectedRoute requireAdmin>
+                <StationManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="admin/bid-sessions" element={
+              <ProtectedRoute requireAdmin>
+                <BidSessionManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="admin/seniority" element={
+              <ProtectedRoute requireAdmin>
+                <SeniorityManagement />
+              </ProtectedRoute>
+            } />
+          </Route>
 
-            {/* Catch all route */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </div>
-      </SocketProvider>
-    );
-  } catch (error) {
-    console.error('App rendering error:', error);
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Application Error</h1>
-          <p className="text-gray-600">Something went wrong. Please refresh the page.</p>
-        </div>
+          {/* Catch all route */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
       </div>
-    );
-  }
+    </SocketProvider>
+  );
 }
 
 export default App;

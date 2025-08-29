@@ -42,7 +42,7 @@ const TurnDisplay = ({ session, currentUser }) => {
       clearInterval(timer);
       clearInterval(expirationTimer);
     };
-  }, [session?.status, session?.currentBidEnd]);
+  }, [session?.status, session?.currentBidEnd, checkTimeExpiration]);
 
   // Calculate time remaining for current bid
   useEffect(() => {
@@ -62,7 +62,7 @@ const TurnDisplay = ({ session, currentUser }) => {
     } else {
       setTimeRemaining(0);
     }
-  }, [session?.currentBidEnd, session?.status, session?.bidWindowDuration, currentTime]);
+  }, [session?.currentBidEnd, session?.status, session?.bidWindowDuration, currentTime, checkTimeExpiration]);
 
   // Function to check for timer expiration
   const checkTimeExpiration = async () => {

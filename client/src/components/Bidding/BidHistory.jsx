@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Clock, 
-  User, 
   Building2, 
   SkipForward, 
   ArrowDown, 
@@ -17,7 +16,7 @@ import toast from 'react-hot-toast';
 const BidHistory = ({ sessionId }) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sessionName, setSessionName] = useState('');
+  const [sessionName] = useState('');
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -26,7 +25,7 @@ const BidHistory = ({ sessionId }) => {
     if (sessionId) {
       fetchHistory();
     }
-  }, [sessionId]);
+  }, [sessionId, fetchHistory]);
 
   const fetchHistory = async () => {
     try {
@@ -41,7 +40,7 @@ const BidHistory = ({ sessionId }) => {
       // eslint-disable-next-line no-console
       console.log('History API response:', response.data);
       setHistory(response.data.history || []);
-      setSessionName(response.data.sessionName || '');
+      // setSessionName(response.data.sessionName || '');
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Error fetching bid history:', error);

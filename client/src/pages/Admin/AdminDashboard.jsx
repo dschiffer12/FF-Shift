@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { useNavigate } from 'react-router-dom';
@@ -23,14 +23,10 @@ import {
   Trash2,
   RefreshCw,
   Download,
-  Play,
   Pause,
   User,
   Wifi,
   WifiOff,
-  Bell,
-  BellOff,
-  Timer,
   Target
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
@@ -74,7 +70,7 @@ const AdminDashboard = () => {
     fetchUserActivity();
     fetchBidSessions();
     fetchOnlineUsers();
-  }, []);
+  }, [fetchDashboardData, fetchUserActivity, fetchBidSessions, fetchOnlineUsers]);
 
   // Add countdown timer effect
   useEffect(() => {
@@ -216,7 +212,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const updateStats = () => {
+  const updateStats = useCallback(() => {
     // Update stats based on current data
     setStats(prev => ({
       ...prev,
@@ -224,14 +220,14 @@ const AdminDashboard = () => {
       activeBidSessions: bidSessions.filter(s => s.status === 'active').length,
       completedBidSessions: bidSessions.filter(s => s.status === 'completed').length
     }));
-  };
+  }, [onlineUsers, bidSessions]);
 
-  const updateActiveBidWindows = () => {
+  const updateActiveBidWindows = useCallback(() => {
     const active = bidSessions.filter(session => 
       session.status === 'active' && session.currentParticipant
     );
     setActiveBidWindows(active);
-  };
+  }, [bidSessions]);
 
   const handleQuickAction = (action) => {
     switch (action) {

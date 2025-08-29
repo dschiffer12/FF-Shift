@@ -43,7 +43,7 @@ const LiveBidding = () => {
     position: ''
   });
   const [showBidForm, setShowBidForm] = useState(false);
-  const [submittingBid, setSubmittingBid] = useState(false);
+  const [, setSubmittingBid] = useState(false);
   const [availableStations, setAvailableStations] = useState([]);
   
   const timerRef = useRef(null);
@@ -711,9 +711,9 @@ const LiveBidding = () => {
                   type="submit"
                   variant="primary"
                   className="flex-1"
-                  disabled={submittingBid}
+                  disabled={false}
                 >
-                  {submittingBid ? 'Submitting...' : 'Submit Bid'}
+                  Submit Bid
                 </Button>
                 <Button
                   type="button"
