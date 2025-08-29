@@ -269,7 +269,6 @@ const StationManagement = () => {
           Import Stations
         </Button>
       </div>
-      </div>
 
       {viewMode === 'list' ? (
         <>
