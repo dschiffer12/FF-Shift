@@ -24,7 +24,8 @@ import {
   Download,
   Pause,
   User,
-  WifiOff
+  WifiOff,
+  Activity
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -96,14 +97,7 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  const fetchUserActivity = useCallback(async () => {
-    try {
-      const response = await api.get('/admin/user-activity');
-      setUserActivity(response.data.activities || []);
-    } catch (error) {
-      console.error('Error fetching user activity:', error);
-    }
-  }, []);
+
 
   const fetchBidSessions = useCallback(async () => {
     try {
@@ -125,10 +119,9 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    fetchUserActivity();
     fetchBidSessions();
     fetchOnlineUsers();
-  }, [fetchDashboardData, fetchUserActivity, fetchBidSessions, fetchOnlineUsers]);
+  }, [fetchDashboardData, fetchBidSessions, fetchOnlineUsers]);
 
   // Add countdown timer effect
   useEffect(() => {
@@ -149,7 +142,6 @@ const AdminDashboard = () => {
 
     // Listen for real-time updates
     const handleUserActivity = (data) => {
-      setUserActivity(prev => [data, ...prev.slice(0, 19)]); // Keep last 20 activities
       updateStats();
     };
 

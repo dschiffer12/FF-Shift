@@ -224,7 +224,7 @@ export const AuthProvider = ({ children }) => {
   // Refresh token function
   const refreshToken = async () => {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
+      // const refreshToken = localStorage.getItem('refreshToken');
       
       if (!refreshToken) {
         throw new Error('No refresh token available');
