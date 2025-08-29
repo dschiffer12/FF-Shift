@@ -35,6 +35,8 @@ import {
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import BiddingSessions from '../../components/Bidding/BiddingSessions';
+import BidNotification from '../../components/Bidding/BidNotification';
 import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -242,6 +244,13 @@ const AdminDashboard = () => {
       case 'start-bid-session':
         navigate('/admin/bid-sessions');
         break;
+      case 'view-live-draft':
+        // Scroll to the Live Draft Experience section
+        const liveDraftSection = document.querySelector('[data-section="live-draft"]');
+        if (liveDraftSection) {
+          liveDraftSection.scrollIntoView({ behavior: 'smooth' });
+        }
+        break;
       case 'view-seniority':
         navigate('/admin/seniority');
         break;
@@ -334,6 +343,13 @@ const AdminDashboard = () => {
               {isConnected ? 'Connected' : 'Disconnected'}
             </span>
           </div>
+          {activeBidWindows.length > 0 && activeBidWindows[0] && (
+            <BidNotification 
+              session={activeBidWindows[0]} 
+              socket={socket} 
+              isConnected={isConnected} 
+            />
+          )}
           <Button
             onClick={() => fetchDashboardData()}
             variant="secondary"
@@ -539,6 +555,34 @@ const AdminDashboard = () => {
         </div>
       )}
 
+      {/* Live Draft Experience - Admin View */}
+      {activeBidWindows.length > 0 && activeBidWindows[0] && (
+        <div className="card" data-section="live-draft">
+          <div className="px-6 py-5 border-b border-rigroster-border">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-medium text-gray-900 flex items-center">
+                  <BarChart3 className="w-6 h-6 mr-3" />
+                  Live Draft Experience - Admin View
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Monitor the bidding process in real-time with comprehensive analytics
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-500">
+                  Session: {activeBidWindows[0].name}
+                </span>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            <BiddingSessions session={activeBidWindows[0]} currentUser={user} isAdmin={true} />
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
         <div className="lg:col-span-1">
@@ -572,6 +616,16 @@ const AdminDashboard = () => {
                   <Calendar className="w-4 h-4 mr-3" />
                   Start Bid Session
                 </Button>
+                {activeBidWindows.length > 0 && (
+                  <Button
+                    onClick={() => handleQuickAction('view-live-draft')}
+                    variant="primary"
+                    className="w-full justify-start"
+                  >
+                    <BarChart3 className="w-4 h-4 mr-3" />
+                    View Live Draft
+                  </Button>
+                )}
                 <Button
                   onClick={() => handleQuickAction('view-seniority')}
                   variant="secondary"

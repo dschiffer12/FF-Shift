@@ -325,6 +325,13 @@ const initializeSocket = (server) => {
         const bidResult = await processBid(bidSession, participant, bidData);
         
         if (bidResult.success) {
+          // Send confirmation to bidder
+          socket.emit('bid_confirmed', {
+            station: { name: bidData.station, id: bidData.station },
+            shift: bidData.shift,
+            position: bidData.position
+          });
+
           // Emit to all users in the session
           io.to(`bid-session-${sessionId}`).emit('bid-submitted', {
             sessionId,

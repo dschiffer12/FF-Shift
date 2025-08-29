@@ -23,6 +23,8 @@ import {
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import TurnDisplay from '../../components/Bidding/TurnDisplay';
+import BiddingSessions from '../../components/Bidding/BiddingSessions';
+import BidNotification from '../../components/Bidding/BidNotification';
 import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -319,7 +321,7 @@ const Bidding = () => {
   };
 
   const handleSubmitBid = async () => {
-    if (!selectedSession || !socket) {
+    if (!selectedSession) {
       toast.error('Unable to submit bid. Please try again.');
       return;
     }
@@ -334,28 +336,101 @@ const Bidding = () => {
     try {
       const bidDataToSend = {
         sessionId: selectedSession.id || selectedSession._id,
-        stationId: bidData.station,
-        shift: bidData.shift,
-        position: bidData.position
+        bidData: {
+          station: bidData.station, // This should be the station ID
+          shift: bidData.shift,
+          position: bidData.position
+        }
       };
       
       console.log('Submitting bid with data:', bidDataToSend);
-      console.log('Socket connected:', socket.connected);
+      console.log('Socket connected:', socket?.connected);
       console.log('Selected session:', selectedSession);
       console.log('Current user:', user);
 
-      // Emit the bid submission via Socket.IO
-      socket.emit('submit_bid', bidDataToSend);
+      let bidSubmitted = false;
 
-      console.log('Bid submitted via Socket.IO');
-      
-      // The response will be handled by the socket event listeners
-      setShowBidModal(false);
-      setBidData({ station: '', shift: '', position: '' });
+      // Try Socket.IO first if available
+      if (socket && isConnected) {
+        try {
+          console.log('Attempting bid submission via Socket.IO...');
+          console.log('Socket connection status:', socket.connected);
+          console.log('Socket ID:', socket.id);
+          
+          // Create a promise to handle socket response
+          const socketPromise = new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Socket timeout'));
+            }, 10000); // 10 second timeout
+
+            console.log('Emitting submit_bid event with data:', bidDataToSend);
+            socket.emit('submit_bid', bidDataToSend);
+            
+            // Listen for success response
+            const successHandler = (data) => {
+              console.log('Received bid_confirmed event:', data);
+              clearTimeout(timeout);
+              socket.off('bid_confirmed', successHandler);
+              socket.off('error', errorHandler);
+              resolve(data);
+            };
+
+            // Listen for error response
+            const errorHandler = (data) => {
+              console.log('Received error event:', data);
+              clearTimeout(timeout);
+              socket.off('bid_confirmed', successHandler);
+              socket.off('error', errorHandler);
+              reject(new Error(data.message || 'Bid submission failed'));
+            };
+
+            socket.on('bid_confirmed', successHandler);
+            socket.on('error', errorHandler);
+          });
+
+          await socketPromise;
+          bidSubmitted = true;
+          console.log('Bid submitted successfully via Socket.IO');
+          
+        } catch (socketError) {
+          console.log('Socket.IO bid submission failed, trying REST API...', socketError);
+        }
+      }
+
+      // Fallback to REST API if Socket.IO failed or is not available
+      if (!bidSubmitted) {
+        console.log('Attempting bid submission via REST API...');
+        
+        const response = await api.post(endpoints.bidSessions.submitBid, {
+          sessionId: selectedSession.id || selectedSession._id,
+          stationId: bidData.station,
+          shift: bidData.shift,
+          position: bidData.position
+        });
+        
+        if (response.data.success) {
+          bidSubmitted = true;
+          console.log('Bid submitted successfully via REST API');
+          
+          // Show success message
+          toast.success(`Bid submitted successfully! Station: ${response.data.assignedStation}, Shift: ${response.data.assignedShift}, Position: ${response.data.assignedPosition}`);
+          
+          // Refresh data
+          fetchMyBids();
+          fetchActiveSessions();
+        } else {
+          throw new Error(response.data.error || 'Bid submission failed');
+        }
+      }
+
+      if (bidSubmitted) {
+        setShowBidModal(false);
+        setBidData({ station: '', shift: '', position: '' });
+      }
       
     } catch (error) {
       console.error('Error submitting bid:', error);
-      toast.error('Failed to submit bid. Please try again.');
+      toast.error(error.message || 'Failed to submit bid. Please try again.');
     } finally {
       setSubmittingBid(false);
     }
@@ -451,13 +526,13 @@ const Bidding = () => {
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh {hasNewSessions && <span className="ml-1 bg-orange-500 text-white rounded-full px-2 py-0.5 text-xs">New</span>}
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-          >
-            <Bell className="w-4 h-4 mr-2" />
-            Notifications
-          </Button>
+          {currentActiveSession && (
+            <BidNotification 
+              session={currentActiveSession} 
+              socket={socket} 
+              isConnected={isConnected} 
+            />
+          )}
         </div>
       </div>
 
@@ -491,49 +566,8 @@ const Bidding = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Current Status */}
-          <div className="card">
-            <div className="px-6 py-5 border-b border-rigroster-border">
-              <h3 className="text-xl font-medium text-gray-900 flex items-center">
-                <Target className="w-6 h-6 mr-3" />
-                My Current Status
-              </h3>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <Award className="w-8 h-8 text-primary-600" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Bid Priority</p>
-                  <p className="text-xl font-bold text-gray-900">#{user?.bidPriority || 'N/A'}</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <Star className="w-8 h-8 text-green-600" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Seniority</p>
-                  <p className="text-xl font-bold text-gray-900">{user?.seniorityScore || 'N/A'}</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <Building2 className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Current Station</p>
-                  <p className="text-xl font-bold text-gray-900">{user?.currentStation?.name || 'Unassigned'}</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <Clock className="w-8 h-8 text-purple-600" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Years of Service</p>
-                  <p className="text-xl font-bold text-gray-900">{user?.yearsOfService || 0}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+                 {/* Main Content */}
+         <div className="lg:col-span-2 space-y-8">
 
           {/* Turn Display - Show when there's an active session */}
           {currentActiveSession && (
@@ -546,6 +580,24 @@ const Bidding = () => {
               </div>
               <div className="p-6">
                 <TurnDisplay session={currentActiveSession} currentUser={user} />
+              </div>
+            </div>
+          )}
+
+          {/* Enhanced Bidding Sessions View - Real-time Draft Experience */}
+          {currentActiveSession && (
+            <div className="card">
+              <div className="px-6 py-5 border-b border-rigroster-border">
+                <h3 className="text-xl font-medium text-gray-900 flex items-center">
+                  <BarChart3 className="w-6 h-6 mr-3" />
+                  Live Draft Experience
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Watch the bidding unfold in real-time with recent bids and upcoming participants
+                </p>
+              </div>
+              <div className="p-6">
+                <BiddingSessions session={currentActiveSession} currentUser={user} />
               </div>
             </div>
           )}
@@ -672,77 +724,7 @@ const Bidding = () => {
             </div>
           </div>
 
-          {/* Recent Bids */}
-          <div className="card">
-            <div className="px-6 py-5 border-b border-rigroster-border">
-              <h3 className="text-xl font-medium text-gray-900 flex items-center">
-                <BarChart3 className="w-6 h-6 mr-3" />
-                Recent Bids
-              </h3>
-            </div>
-            <div className="p-6">
-              {bidsLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <LoadingSpinner size="lg" />
-                </div>
-              ) : myBids.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Session
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Station
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Priority
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {myBids.slice(0, 5).map((bid) => (
-                        <tr key={bid._id} className="hover:bg-gray-50">
-                          <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
-                            {formatDate(bid.createdAt)}
-                          </td>
-                          <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
-                            {bid.session?.name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
-                            {bid.station?.name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-3 whitespace-nowrap">
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getBidStatusColor(bid.status)}`}>
-                              {bid.status || 'Unknown'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
-                            #{bid.bidPriority || 'N/A'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Recent Bids</h3>
-                  <p className="text-gray-600">
-                    You haven't placed any bids yet. Join an active session to get started!
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+          
         </div>
 
         {/* Sidebar */}

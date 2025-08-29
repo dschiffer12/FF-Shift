@@ -131,6 +131,7 @@ export const endpoints = {
     checkTimeExpiration: (id) => `/bid-sessions/${id}/check-time-expiration`,
     myParticipation: (id) => `/bid-sessions/${id}/my-participation`,
     history: (id) => `/bid-sessions-history?sessionId=${id}`,
+    submitBid: '/bid-sessions/submit-bid',
   },
 
   // Admin
