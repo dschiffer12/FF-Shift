@@ -1,17 +1,9 @@
 {
   "version": 2,
-  "functions": {
-    "../api/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "builds": [
     {
-      "src": "../api/**/*.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["../api/**/*"]
-      }
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
     },
     {
       "src": "package.json",
@@ -24,7 +16,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/../api/$1"
+      "dest": "/api/$1.js"
     },
     {
       "handle": "filesystem"

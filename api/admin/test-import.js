@@ -8,6 +8,7 @@ module.exports = async (req, res) => {
   res.json({
     message: 'Admin import test endpoint is working',
     method: req.method,
-    url: req.url
+    url: req.url,
+    path: req.path
   });
 };
