@@ -93,8 +93,8 @@ export const AuthProvider = ({ children }) => {
       
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       
-      console.log('AuthContext: Making API call to /auth/login');
-      const response = await api.post('/auth/login', { email, password });
+      console.log('AuthContext: Making API call to /auth/login-simple');
+      const response = await api.post('/auth/login-simple', { email, password });
       console.log('AuthContext: API response received:', response.data);
       
       const { user, token, refreshToken } = response.data;
