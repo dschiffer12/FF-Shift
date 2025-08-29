@@ -1,13 +1,22 @@
 import axios from 'axios';
 
+// Debug environment variables
+console.log('API Service - Environment variables:', {
+  REACT_APP_API_URL: process.env.REACT_APP_API_URL,
+  NODE_ENV: process.env.NODE_ENV,
+  fallback: process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api'
+});
+
 // Create axios instance
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api'),
+  baseURL: process.env.NODE_ENV === 'production' ? 'https://ff-shift.vercel.app/api' : 'http://localhost:5000/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+console.log('API Service - Final baseURL:', api.defaults.baseURL);
 
 // Request interceptor
 api.interceptors.request.use(
