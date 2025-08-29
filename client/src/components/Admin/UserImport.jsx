@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Upload, Download, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Upload, Download, CheckCircle, XCircle } from 'lucide-react';
 import Button from '../UI/Button';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
 
 const UserImport = () => {
@@ -77,29 +78,21 @@ const UserImport = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/admin/import-users', {
-        method: 'POST',
-        body: formData,
+      const response = await api.post('/admin/import-users', formData, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Upload failed');
-      }
-
-      setResults(data.results);
-      toast.success(`Import completed! ${data.results.created} users created, ${data.results.skipped} skipped.`);
+      setResults(response.data.results);
+      toast.success(`Import completed! ${response.data.results.created} users created, ${response.data.results.skipped} skipped.`);
       
       // Clear the file after successful upload
       setFile(null);
       
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error(error.message || 'Upload failed');
+      toast.error(error.response?.data?.error || error.message || 'Upload failed');
     } finally {
       setIsUploading(false);
     }

@@ -12,7 +12,7 @@
     "client": "cd client && npm start",
     "build": "cd client && npm install && npm run build",
     "install-all": "npm install && cd client && npm install",
-    "start": "node server/index.js",W
+    "start": "node server/index.js",
     "setup": "node setup.js",
     "vercel-build": "npm install && cd client && npm install && npm run build"
   },

@@ -2,7 +2,27 @@ const multer = require('multer');
 const xlsx = require('xlsx');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
+const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const User = require('../../server/models/User');
+
+// Database connection
+const connectDB = async () => {
+  try {
+    if (mongoose.connection.readyState === 1) {
+      return; // Already connected
+    }
+    
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('MongoDB connected for import-users');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw error;
+  }
+};
 
 // Configure multer for file upload
 const storage = multer.memoryStorage();
@@ -43,12 +63,54 @@ const handlePreflight = (req, res) => {
   return false;
 };
 
+// Authentication middleware
+const authenticateToken = async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    res.status(401).json({ error: 'Access token required' });
+    return false;
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId);
+    
+    if (!user || !user.isActive) {
+      res.status(401).json({ error: 'Invalid or inactive user' });
+      return false;
+    }
+
+    if (!user.isAdmin) {
+      res.status(403).json({ error: 'Admin access required' });
+      return false;
+    }
+
+    req.user = user;
+    return true;
+  } catch (error) {
+    console.error('Token verification error:', error);
+    res.status(401).json({ error: 'Invalid token' });
+    return false;
+  }
+};
+
 module.exports = async (req, res) => {
   setCORSHeaders(res);
   
   if (handlePreflight(req, res)) return;
 
   try {
+    // Ensure database connection
+    await connectDB();
+    
+    // Authenticate user
+    const isAuthenticated = await authenticateToken(req, res);
+    if (!isAuthenticated) {
+      return;
+    }
+    
     // Handle file upload
     upload.single('file')(req, res, async (err) => {
       if (err) {
