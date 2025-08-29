@@ -49,6 +49,175 @@ router.get('/current', authenticateToken, async (req, res) => {
   }
 });
 
+
+
+// Get bid session history
+router.get('/history', authenticateToken, async (req, res) => {
+  try {
+    const { sessionId } = req.query;
+    
+    if (!sessionId) {
+      return res.status(400).json({ error: 'Session ID is required' });
+    }
+
+    const bidSession = await BidSession.findById(sessionId)
+      .populate('participants.user', 'firstName lastName rank position employeeId')
+      .populate('participants.assignedStation', 'name number')
+      .populate('createdBy', 'firstName lastName');
+
+    if (!bidSession) {
+      return res.status(404).json({ error: 'Bid session not found' });
+    }
+
+    const history = [];
+
+    // Add session creation event
+    history.push({
+      _id: bidSession._id,
+      action: 'session_created',
+      timestamp: bidSession.createdAt,
+      user: bidSession.createdBy,
+      details: {
+        sessionName: bidSession.name,
+        year: bidSession.year,
+        status: bidSession.status
+      }
+    });
+
+    // Add participant bids
+    bidSession.participants.forEach((participant, index) => {
+      if (participant.bidHistory && participant.bidHistory.length > 0) {
+        participant.bidHistory.forEach(bid => {
+          history.push({
+            _id: bid._id,
+            action: 'bid_submitted',
+            timestamp: bid.timestamp,
+            user: participant.user,
+            details: {
+              station: bid.station,
+              shift: bid.shift,
+              position: bid.position,
+              participantPosition: participant.position,
+              bidPriority: participant.bidPriority
+            }
+          });
+        });
+      }
+
+      // Add assignment events
+      if (participant.assignedStation) {
+        history.push({
+          _id: `${bidSession._id}_assignment_${participant.user._id}`,
+          action: 'assignment_made',
+          timestamp: participant.assignedAt || bidSession.updatedAt,
+          user: participant.user,
+          details: {
+            station: participant.assignedStation,
+            shift: participant.assignedShift,
+            position: participant.assignedPosition,
+            participantPosition: participant.position,
+            autoAssigned: participant.autoAssigned || false
+          }
+        });
+      }
+    });
+
+    // Sort by timestamp
+    history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    res.json({ history });
+
+  } catch (error) {
+    console.error('Get bid session history error:', error);
+    res.status(500).json({ error: 'Failed to get bid session history' });
+  }
+});
+
+// Submit bid (HTTP endpoint)
+router.post('/submit-bid', authenticateToken, async (req, res) => {
+  try {
+    const { sessionId, bidData } = req.body;
+    
+    if (!sessionId || !bidData) {
+      return res.status(400).json({ error: 'Session ID and bid data are required' });
+    }
+
+    const { station: stationId, shift, position } = bidData;
+
+    // Validate bid session
+    const bidSession = await BidSession.findById(sessionId);
+    if (!bidSession) {
+      return res.status(404).json({ error: 'Bid session not found' });
+    }
+
+    // Check if it's user's turn
+    const participant = bidSession.participants.find(p => 
+      p.user.toString() === req.user._id.toString()
+    );
+
+    if (!participant) {
+      return res.status(400).json({ error: 'You are not a participant in this session' });
+    }
+
+    if (participant.position !== bidSession.currentParticipant) {
+      return res.status(400).json({ error: 'It is not your turn to bid' });
+    }
+
+    // Check if user has already bid
+    if (participant.hasBid) {
+      return res.status(400).json({ error: 'You have already submitted a bid' });
+    }
+
+    // Check if bid window is active
+    if (!participant.timeWindow || !participant.timeWindow.start || !participant.timeWindow.end) {
+      return res.status(400).json({ error: 'No active bid window' });
+    }
+
+    const now = new Date();
+    if (now > participant.timeWindow.end) {
+      return res.status(400).json({ error: 'Bid window has expired' });
+    }
+
+    // Validate station and position availability
+    const Station = require('../models/Station');
+    console.log('Looking for station with ID:', stationId);
+    const station = await Station.findById(stationId);
+    console.log('Found station:', station ? station.name : 'Not found');
+    
+    if (!station) {
+      return res.status(404).json({ error: 'Station not found' });
+    }
+
+    if (!station.isActive) {
+      return res.status(400).json({ error: 'Station is not active' });
+    }
+
+    // Check position availability
+    const positionAvailable = station.hasAvailablePosition(shift, position);
+    if (!positionAvailable) {
+      return res.status(400).json({ error: 'Position not available at this station' });
+    }
+
+    // Process the bid
+    await bidSession.processBid(stationId, shift, position);
+
+    // Get updated station info
+    const updatedStation = await Station.findById(stationId);
+
+    res.json({
+      message: 'Bid submitted successfully',
+      station: updatedStation.getSummary(),
+      shift,
+      position,
+      nextParticipant: bidSession.currentParticipantInfo
+    });
+
+  } catch (error) {
+    console.error('Submit bid error:', error);
+    res.status(500).json({ error: 'Failed to submit bid' });
+  }
+});
+
 // Get single bid session
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
@@ -838,6 +1007,8 @@ router.post('/:id/check-time-expiration', authenticateToken, async (req, res) =>
     res.status(500).json({ error: 'Failed to check time expiration' });
   }
 });
+
+
 
 // Get current user's participation in bid session
 router.get('/:id/my-participation', authenticateToken, async (req, res) => {

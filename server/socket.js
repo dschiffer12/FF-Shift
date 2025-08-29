@@ -175,7 +175,8 @@ const initializeSocket = (server) => {
       try {
         console.log('Received bid submission:', data);
         console.log('User submitting bid:', socket.user.email);
-        const { sessionId, stationId, shift, position } = data;
+        const { sessionId, bidData } = data;
+        const { station: stationId, shift, position } = bidData;
 
         const bidSession = await BidSession.findById(sessionId);
         if (!bidSession) {
@@ -233,8 +234,15 @@ const initializeSocket = (server) => {
 
         // Validate station and position availability
         const Station = require('./models/Station');
+        console.log('Looking for station with ID:', stationId);
         const station = await Station.findById(stationId);
         console.log('Found station:', station ? station.name : 'Not found');
+        console.log('Station details:', station ? {
+          id: station._id,
+          name: station.name,
+          number: station.number,
+          isActive: station.isActive
+        } : 'No station found');
         if (!station) {
           socket.emit('error', { message: 'Station not found' });
           return;

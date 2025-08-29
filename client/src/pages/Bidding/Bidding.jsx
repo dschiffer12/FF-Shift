@@ -401,9 +401,11 @@ const Bidding = () => {
         
         const response = await api.post(endpoints.bidSessions.submitBid, {
           sessionId: selectedSession.id || selectedSession._id,
-          stationId: bidData.station,
-          shift: bidData.shift,
-          position: bidData.position
+          bidData: {
+            station: bidData.station,
+            shift: bidData.shift,
+            position: bidData.position
+          }
         });
         
         if (response.data.success) {

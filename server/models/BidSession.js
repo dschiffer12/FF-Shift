@@ -286,6 +286,11 @@ bidSessionSchema.methods.startSession = function() {
     details: 'Bid session started'
   });
   
+  // Update the participant's time window in the database
+  const participantIndex = this.currentParticipant - 1;
+  const participantUpdate = {};
+  participantUpdate[`participants.${participantIndex}.timeWindow`] = this.participants[participantIndex].timeWindow;
+
   return this.constructor.findOneAndUpdate(
     { _id: this._id },
     {
@@ -294,7 +299,8 @@ bidSessionSchema.methods.startSession = function() {
         actualStart: this.actualStart,
         currentParticipant: this.currentParticipant,
         currentBidStart: this.currentBidStart,
-        currentBidEnd: this.currentBidEnd
+        currentBidEnd: this.currentBidEnd,
+        ...participantUpdate
       },
       $push: { sessionHistory: this.sessionHistory[this.sessionHistory.length - 1] }
     },
@@ -333,13 +339,19 @@ bidSessionSchema.methods.resumeSession = function() {
     details: 'Bid session resumed'
   });
   
+  // Update the participant's time window in the database
+  const participantIndex = this.currentParticipant - 1;
+  const participantUpdate = {};
+  participantUpdate[`participants.${participantIndex}.timeWindow`] = this.participants[participantIndex].timeWindow;
+
   return this.constructor.findOneAndUpdate(
     { _id: this._id },
     {
       $set: {
         status: this.status,
         currentBidStart: this.currentBidStart,
-        currentBidEnd: this.currentBidEnd
+        currentBidEnd: this.currentBidEnd,
+        ...participantUpdate
       },
       $push: { sessionHistory: this.sessionHistory[this.sessionHistory.length - 1] }
     },
@@ -628,6 +640,13 @@ bidSessionSchema.methods.processBid = async function(stationId, shift, position)
   // Advance to next participant and save the advancement
   this.advanceToNextParticipant();
   
+  // Update the participant's time window in the database
+  const nextParticipantIndex = this.currentParticipant - 1;
+  const participantUpdate = {};
+  if (this.participants[nextParticipantIndex] && this.participants[nextParticipantIndex].timeWindow) {
+    participantUpdate[`participants.${nextParticipantIndex}.timeWindow`] = this.participants[nextParticipantIndex].timeWindow;
+  }
+
   // Use findOneAndUpdate for the advancement to avoid parallel save issues
   const finalUpdate = await this.constructor.findOneAndUpdate(
     { _id: this._id },
@@ -636,7 +655,8 @@ bidSessionSchema.methods.processBid = async function(stationId, shift, position)
         currentParticipant: this.currentParticipant,
         currentBidStart: this.currentBidStart,
         currentBidEnd: this.currentBidEnd,
-        completedBids: this.completedBids
+        completedBids: this.completedBids,
+        ...participantUpdate
       }
     },
     { new: true }

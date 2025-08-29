@@ -261,9 +261,11 @@ const LiveBidding = () => {
       // Emit the bid submission event
       socket.emit('submit_bid', {
         sessionId: sessionId,
-        stationId: bidData.station,
-        shift: bidData.shift,
-        position: bidData.position
+        bidData: {
+          station: bidData.station,
+          shift: bidData.shift,
+          position: bidData.position
+        }
       });
 
       // Clear the form

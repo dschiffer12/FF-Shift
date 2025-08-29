@@ -166,7 +166,7 @@ export const endpoints = {
     moveToBack: (id) => `/bid-sessions/${id}/move-to-back`,
     checkTimeExpiration: (id) => `/bid-sessions/${id}/check-time-expiration`,
     myParticipation: (id) => `/bid-sessions/${id}/my-participation`,
-    history: (id) => `/bid-sessions-history?sessionId=${id}`,
+    history: (id) => `/bid-sessions/history?sessionId=${id}`,
     submitBid: '/bid-sessions/submit-bid',
   },
 
