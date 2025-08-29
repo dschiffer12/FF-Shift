@@ -23,8 +23,19 @@ api.interceptors.request.use(
   (config) => {
     // Add auth token if available
     const token = localStorage.getItem('token');
+    console.log('API Request Interceptor:', {
+      url: config.url,
+      method: config.method,
+      hasToken: !!token,
+      tokenLength: token?.length,
+      tokenPreview: token?.substring(0, 20) + '...'
+    });
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('API Request Interceptor: Authorization header set:', config.headers.Authorization?.substring(0, 30) + '...');
+    } else {
+      console.log('API Request Interceptor: No token found in localStorage');
     }
     return config;
   },
@@ -45,12 +56,28 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
+      // Check if it's a malformed token error
+      if (error.response?.data?.code === 'TOKEN_MALFORMED' || 
+          error.response?.data?.error?.includes('malformed') ||
+          error.response?.data?.error?.includes('Invalid refresh token format')) {
+        console.log('Malformed token detected, clearing tokens...');
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        delete api.defaults.headers.common['Authorization'];
+        
+        // Redirect to login
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+
       try {
         // Try to refresh token
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
           const response = await axios.post(
-            `${process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api')}/auth/refresh`,
+            `${api.defaults.baseURL}/auth/refresh`,
             { refreshToken }
           );
 

@@ -85,6 +85,20 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
+  // Clear any corrupted tokens on app load
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    // Check if tokens exist but are malformed
+    if (token && (token.length < 10 || !token.includes('.'))) {
+      console.log('Detected malformed token, clearing...');
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      dispatch({ type: AUTH_ACTIONS.LOGOUT });
+    }
+  }, []);
+
   // Login function
   const login = async (email, password) => {
     try {
@@ -93,24 +107,38 @@ export const AuthProvider = ({ children }) => {
       
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       
-      console.log('AuthContext: Making API call to /auth/login-simple');
-      const response = await api.post('/auth/login-simple', { email, password });
+      console.log('AuthContext: Making API call to /auth/login');
+      const response = await api.post('/auth/login', { email, password });
       console.log('AuthContext: API response received:', response.data);
       
       const { user, token, refreshToken } = response.data;
+
+      console.log('AuthContext: Tokens received:', {
+        tokenLength: token?.length,
+        refreshTokenLength: refreshToken?.length,
+        tokenPreview: token?.substring(0, 20) + '...',
+        refreshTokenPreview: refreshToken?.substring(0, 20) + '...'
+      });
 
       // Store tokens
       localStorage.setItem('token', token);
       localStorage.setItem('refreshToken', refreshToken);
 
-      // Update state
-      dispatch({ type: AUTH_ACTIONS.SET_TOKEN, payload: token });
-      dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
+      console.log('AuthContext: Tokens stored in localStorage');
+      console.log('AuthContext: localStorage token:', localStorage.getItem('token')?.substring(0, 20) + '...');
 
+      // Set Authorization header for subsequent requests
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      console.log('AuthContext: Authorization header set:', api.defaults.headers.common['Authorization']?.substring(0, 30) + '...');
+
+      // Update state
+      dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
+      
       toast.success('Login successful!');
       navigate('/dashboard');
       
-      return { success: true };
+      return { success: true, user, token, refreshToken };
     } catch (error) {
       console.error('AuthContext: Login error:', {
         message: error.message,
@@ -125,22 +153,8 @@ export const AuthProvider = ({ children }) => {
       });
       
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      
-      // Handle different types of error responses
-      let message = 'Login failed';
-      
-      if (error.response?.data?.error) {
-        message = error.response.data.error;
-      } else if (error.response?.data?.message) {
-        message = error.response.data.message;
-      } else if (error.message) {
-        message = error.message;
-      }
-      
-      toast.error(message);
-      
-      // Return a simple object, not the error object
-      return { success: false, error: message };
+      toast.error(error.response?.data?.error || error.message || 'Login failed');
+      return { success: false, error: error.response?.data?.error || error.message };
     }
   };
 
@@ -303,6 +317,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Force clear all tokens and restart auth flow
+  const forceClearTokens = () => {
+    console.log('Force clearing all tokens...');
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    delete api.defaults.headers.common['Authorization'];
+    dispatch({ type: AUTH_ACTIONS.LOGOUT });
+    
+    // Force page reload to clear any cached state
+    window.location.reload();
+  };
+
   const value = {
     user: state.user,
     token: state.token,
@@ -317,6 +343,7 @@ export const AuthProvider = ({ children }) => {
     changePassword,
     forgotPassword,
     resetPassword,
+    forceClearTokens,
   };
 
   return (

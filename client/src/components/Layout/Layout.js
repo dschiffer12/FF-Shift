@@ -31,7 +31,7 @@ const Layout = () => {
       { name: 'User Management', href: '/admin/users', icon: Users },
       { name: 'Seniority Management', href: '/admin/seniority', icon: TrendingUp },
       { name: 'Station Management', href: '/admin/stations', icon: Building2 },
-      { name: 'Bid Sessions', href: '/admin/bid-sessions', icon: Clock },
+      { name: 'Bid Management', href: '/admin/bid-sessions', icon: Clock },
     ] : []),
   ];
 

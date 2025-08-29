@@ -104,53 +104,80 @@ router.post('/register', validateRegistration, async (req, res) => {
 // Login user
 router.post('/login', validateLogin, async (req, res) => {
   try {
+    console.log('Login attempt received:', {
+      body: req.body,
+      email: req.body.email,
+      hasPassword: !!req.body.password
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Login validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { email, password } = req.body;
 
+    console.log('Login attempt for email:', email);
+
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
+      console.log('User not found for email:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    console.log('User found:', {
+      id: user._id,
+      email: user.email,
+      isActive: user.isActive,
+      isAdmin: user.isAdmin
+    });
 
     // Check if user is active
     if (!user.isActive) {
+      console.log('User account is inactive:', email);
       return res.status(401).json({ error: 'Account is deactivated' });
     }
 
-    // Verify password
-    const isPasswordValid = await user.comparePassword(password);
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      console.log('Invalid password for user:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+    console.log('Login successful for user:', email);
 
     // Generate tokens
     const token = generateToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
 
+    console.log('Tokens generated:', {
+      tokenLength: token.length,
+      refreshTokenLength: refreshToken.length
+    });
+
+    // Update last login time
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Remove password from response
+    const userResponse = {
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      employeeId: user.employeeId,
+      rank: user.rank,
+      position: user.position,
+      yearsOfService: user.yearsOfService,
+      isAdmin: user.isAdmin,
+      isActive: user.isActive
+    };
+
     res.json({
-      message: 'Login successful',
-      user: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        employeeId: user.employeeId,
-        rank: user.rank,
-        position: user.position,
-        yearsOfService: user.yearsOfService,
-        isAdmin: user.isAdmin,
-        currentStation: user.currentStation,
-        currentShift: user.currentShift
-      },
+      user: userResponse,
       token,
       refreshToken
     });
@@ -168,6 +195,16 @@ router.post('/refresh', async (req, res) => {
 
     if (!refreshToken) {
       return res.status(401).json({ error: 'Refresh token required' });
+    }
+
+    // Validate token format before attempting to verify
+    if (typeof refreshToken !== 'string' || refreshToken.length < 10 || !refreshToken.includes('.')) {
+      console.log('Malformed refresh token detected:', {
+        type: typeof refreshToken,
+        length: refreshToken?.length,
+        preview: refreshToken?.substring(0, 20)
+      });
+      return res.status(401).json({ error: 'Invalid refresh token format' });
     }
 
     const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
@@ -191,6 +228,23 @@ router.post('/refresh', async (req, res) => {
 
   } catch (error) {
     console.error('Token refresh error:', error);
+    
+    // Provide more specific error messages
+    if (error.name === 'JsonWebTokenError') {
+      if (error.message === 'jwt malformed') {
+        console.log('JWT malformed - clearing client tokens');
+        return res.status(401).json({ 
+          error: 'Token is malformed. Please log in again.',
+          code: 'TOKEN_MALFORMED'
+        });
+      }
+      return res.status(401).json({ error: 'Invalid token format' });
+    }
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token has expired' });
+    }
+    
     res.status(401).json({ error: 'Invalid refresh token' });
   }
 });

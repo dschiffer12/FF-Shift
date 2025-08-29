@@ -22,7 +22,7 @@
     "real-time",
     "bidding"
   ],
-  "author": "FF Shift Team",
+  "author": "Dustin Schiffer",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.11.0",

@@ -10,6 +10,7 @@ const Login = () => {
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   
   const {
     register,
@@ -19,22 +20,22 @@ const Login = () => {
 
   const onSubmit = async (data) => {
     setIsLoading(true);
+    setError(null);
+    
     try {
+      // Clear any existing tokens first
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      
       console.log('Attempting login with:', { email: data.email, password: '***' });
       console.log('API base URL:', process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api'));
       
       const response = await login(data.email, data.password);
       console.log('Login response:', response);
       
-      // Store tokens
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('refreshToken', response.refreshToken);
+      // The login function in AuthContext already handles token storage and navigation
+      // No need to duplicate the logic here
       
-      // Update auth context
-      login(response.user, response.token);
-      
-      // Redirect to dashboard
-      // navigate('/dashboard'); // This line was removed as per the new_code, as the original code had it commented out.
     } catch (error) {
       console.error('Login error details:', {
         message: error.message,
@@ -49,12 +50,16 @@ const Login = () => {
         }
       });
       
-      // Ensure error is properly handled and not rendered
-      if (error && typeof error === 'object') {
-        const message = error.message || error.error || 'Login failed';
-        console.error('Login error message:', message);
+      // Handle JWT malformed error specifically
+      if (error.response?.data?.error?.includes('malformed') || error.message?.includes('malformed')) {
+        setError('Authentication token is invalid. Please try logging in again.');
+        // Clear any corrupted tokens
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+      } else {
+        setError(error.response?.data?.error || error.message || 'Login failed');
       }
-    } finally {
+      
       setIsLoading(false);
     }
   };
