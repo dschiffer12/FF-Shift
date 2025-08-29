@@ -20,14 +20,34 @@ const Login = () => {
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
-      const result = await login(data.email, data.password);
+      console.log('Attempting login with:', { email: data.email, password: '***' });
+      console.log('API base URL:', process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api'));
       
-      // Handle login result
-      if (!result || !result.success) {
-        console.error('Login failed:', result?.error || 'Unknown error');
-      }
+      const response = await login(data.email, data.password);
+      console.log('Login response:', response);
+      
+      // Store tokens
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('refreshToken', response.refreshToken);
+      
+      // Update auth context
+      login(response.user, response.token);
+      
+      // Redirect to dashboard
+      // navigate('/dashboard'); // This line was removed as per the new_code, as the original code had it commented out.
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL,
+          headers: error.config?.headers
+        }
+      });
       
       // Ensure error is properly handled and not rendered
       if (error && typeof error === 'object') {

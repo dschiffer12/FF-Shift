@@ -88,9 +88,15 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (email, password) => {
     try {
+      console.log('AuthContext: Starting login process');
+      console.log('AuthContext: API base URL:', api.defaults.baseURL);
+      
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       
+      console.log('AuthContext: Making API call to /auth/login');
       const response = await api.post('/auth/login', { email, password });
+      console.log('AuthContext: API response received:', response.data);
+      
       const { user, token, refreshToken } = response.data;
 
       // Store tokens
@@ -106,6 +112,18 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      console.error('AuthContext: Login error:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL
+        }
+      });
+      
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       
       // Handle different types of error responses
