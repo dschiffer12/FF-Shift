@@ -15,11 +15,11 @@ const Button = ({
   
   const variants = {
     primary: 'bg-rigroster-red text-white hover:bg-primary-600 focus:ring-rigroster-red disabled:bg-gray-600',
-    secondary: 'bg-rigroster-darkGray text-white border border-gray-600 hover:bg-gray-700 focus:ring-rigroster-red disabled:bg-gray-800 disabled:text-gray-400',
+    secondary: 'bg-gray-600 text-white border border-gray-500 hover:bg-gray-700 focus:ring-rigroster-red disabled:bg-gray-400 disabled:text-gray-200',
     success: 'bg-success-600 text-white hover:bg-success-700 focus:ring-success-500 disabled:bg-success-400',
     warning: 'bg-warning-600 text-white hover:bg-warning-700 focus:ring-warning-500 disabled:bg-warning-400',
     danger: 'bg-rigroster-red text-white hover:bg-primary-600 focus:ring-rigroster-red disabled:bg-gray-600',
-    ghost: 'bg-transparent text-gray-300 hover:bg-gray-700 focus:ring-rigroster-red disabled:bg-transparent disabled:text-gray-500',
+    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-rigroster-red disabled:bg-transparent disabled:text-gray-400',
   };
 
   const sizes = {

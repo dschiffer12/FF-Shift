@@ -170,9 +170,8 @@ const AdminTurnDisplay = ({ session, onPauseSession, onResumeSession, onAutoAssi
                <div className="flex items-center space-x-2">
                  <Button
                    onClick={handleAutoAssign}
-                   variant="secondary"
+                   variant="warning"
                    size="sm"
-                   className="text-purple-600 hover:text-purple-800"
                  >
                    <RotateCcw className="w-4 h-4 mr-1" />
                    Move to Back
@@ -182,9 +181,8 @@ const AdminTurnDisplay = ({ session, onPauseSession, onResumeSession, onAutoAssi
                                  {session.status === 'active' ? (
                    <Button
                      onClick={() => onPauseSession?.(session.id || session._id)}
-                     variant="secondary"
+                     variant="warning"
                      size="sm"
-                     className="text-yellow-600 hover:text-yellow-800"
                    >
                      <Pause className="w-4 h-4 mr-1" />
                      Pause
@@ -192,9 +190,8 @@ const AdminTurnDisplay = ({ session, onPauseSession, onResumeSession, onAutoAssi
                  ) : (
                    <Button
                      onClick={() => onResumeSession?.(session.id || session._id)}
-                     variant="secondary"
+                     variant="success"
                      size="sm"
-                     className="text-green-600 hover:text-green-800"
                    >
                      <Play className="w-4 h-4 mr-1" />
                      Resume

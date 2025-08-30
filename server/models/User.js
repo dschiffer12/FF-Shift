@@ -20,6 +20,17 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  phoneNumber: {
+    type: String,
+    trim: true,
+    validate: {
+      validator: function(v) {
+        // Basic phone number validation - allows various formats
+        return !v || /^[\+]?[1-9][\d]{0,15}$/.test(v.replace(/[\s\-\(\)]/g, ''));
+      },
+      message: 'Please enter a valid phone number'
+    }
+  },
   employeeId: {
     type: String,
     required: true,

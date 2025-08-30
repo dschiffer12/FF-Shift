@@ -30,6 +30,7 @@ import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import api, { endpoints } from '../../services/api';
 import toast from 'react-hot-toast';
 import BidPreferences from './BidPreferences';
+import NotificationSettings from '../../components/Profile/NotificationSettings';
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
@@ -849,6 +850,16 @@ const Profile = () => {
                 <Settings className="w-4 h-4 mr-2" />
                 Manage Preferences
               </Button>
+            </div>
+          </div>
+
+          {/* Notification Settings */}
+          <div className="card">
+            <div className="px-6 py-5 border-b border-rigroster-border">
+              <h3 className="text-xl font-medium text-gray-900">Notification Settings</h3>
+            </div>
+            <div className="p-6">
+              <NotificationSettings />
             </div>
           </div>
 

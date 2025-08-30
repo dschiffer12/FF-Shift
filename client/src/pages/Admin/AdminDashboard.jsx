@@ -25,7 +25,8 @@ import {
   Pause,
   User,
   WifiOff,
-  Activity
+  Activity,
+  Bell
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -241,6 +242,9 @@ const AdminDashboard = () => {
         break;
       case 'view-seniority':
         navigate('/admin/seniority');
+        break;
+      case 'notification-management':
+        navigate('/admin/notifications');
         break;
       case 'export-data':
         toast.success('Exporting data...');
@@ -629,6 +633,14 @@ const AdminDashboard = () => {
                 >
                   <Shield className="w-4 h-4 mr-3" />
                   Manage Permissions
+                </Button>
+                <Button
+                  onClick={() => handleQuickAction('notification-management')}
+                  variant="secondary"
+                  className="w-full justify-start"
+                >
+                  <Bell className="w-4 h-4 mr-3" />
+                  Notification Management
                 </Button>
                 <Button
                   onClick={() => handleQuickAction('system-settings')}

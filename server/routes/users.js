@@ -352,6 +352,26 @@ router.get('/recent-activity', authenticateToken, async (req, res) => {
   }
 });
 
+// Get all users (admin only)
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const users = await User.find({})
+      .select('firstName lastName email rank position yearsOfService isAdmin')
+      .sort({ lastName: 1, firstName: 1 });
+
+    res.json({ users });
+
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({ error: 'Failed to get users' });
+  }
+});
+
 // Get user's notifications
 router.get('/notifications', authenticateToken, async (req, res) => {
   try {

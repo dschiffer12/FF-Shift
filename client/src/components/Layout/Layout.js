@@ -12,7 +12,8 @@ import {
   X,
   BarChart3,
   Target,
-  TrendingUp
+  TrendingUp,
+  Bell
 } from 'lucide-react';
 import Logo from '../UI/Logo';
 
@@ -32,6 +33,7 @@ const Layout = () => {
       { name: 'Seniority Management', href: '/admin/seniority', icon: TrendingUp },
       { name: 'Station Management', href: '/admin/stations', icon: Building2 },
       { name: 'Bid Management', href: '/admin/bid-sessions', icon: Clock },
+      { name: 'Notification Management', href: '/admin/notifications', icon: Bell },
     ] : []),
   ];
 

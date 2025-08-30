@@ -12,6 +12,7 @@ const userRoutes = require('./routes/users');
 const stationRoutes = require('./routes/stations');
 const bidSessionRoutes = require('./routes/bidSessions');
 const adminRoutes = require('./routes/admin');
+const notificationRoutes = require('./routes/notifications');
 
 const { initializeSocket } = require('./socket');
 
@@ -61,6 +62,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/stations', stationRoutes);
 app.use('/api/bid-sessions', bidSessionRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -70,6 +72,10 @@ app.get('/api/health', (req, res) => {
 // Initialize Socket.IO and make it globally available
 const io = initializeSocket(server);
 global.io = io;
+
+// Initialize notification scheduler
+const notificationScheduler = require('./services/notificationScheduler');
+notificationScheduler.start();
 
 // Background task to check for timer expiration every 60 seconds (reduced frequency to avoid conflicts)
 const BidSession = require('./models/BidSession');

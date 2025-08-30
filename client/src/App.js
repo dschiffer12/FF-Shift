@@ -20,6 +20,7 @@ import UserManagement from './pages/Admin/UserManagement';
 import StationManagement from './pages/Admin/StationManagement';
 import BidSessionManagement from './pages/Admin/BidSessionManagement';
 import SeniorityManagement from './pages/Admin/SeniorityManagement';
+import NotificationManagement from './pages/Admin/NotificationManagement';
 import LoadingSpinner from './components/UI/LoadingSpinner';
 
 // Protected Route Component
@@ -131,6 +132,11 @@ function App() {
             <Route path="admin/seniority" element={
               <ProtectedRoute requireAdmin>
                 <SeniorityManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="admin/notifications" element={
+              <ProtectedRoute requireAdmin>
+                <NotificationManagement />
               </ProtectedRoute>
             } />
           </Route>

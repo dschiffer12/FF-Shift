@@ -16,6 +16,7 @@ A modern, real-time shift bidding platform designed specifically for fire depart
 - **Bid Session Control**: Start, pause, and manage bidding sessions
 - **Password Reset**: Automated password reset functionality
 - **Analytics Dashboard**: View bidding statistics and member assignments
+- **Notification Management**: Test and manage email/SMS notifications
 
 ## Technology Stack
 
@@ -57,8 +58,16 @@ MONGODB_URI=mongodb://localhost:27017/ff-shift-bid
 JWT_SECRET=your-secret-key
 EMAIL_SERVICE=gmail
 EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
+EMAIL_PASSWORD=your-app-password
+EMAIL_FROM=noreply@ffshiftbid.com
+
+# SMS Notifications (Twilio)
+TWILIO_ACCOUNT_SID=your-twilio-account-sid
+TWILIO_AUTH_TOKEN=your-twilio-auth-token
+TWILIO_PHONE_NUMBER=+1234567890
 ```
+
+For detailed notification setup instructions, see [NOTIFICATION_SETUP.md](NOTIFICATION_SETUP.md).
 
 ## Project Structure
 
